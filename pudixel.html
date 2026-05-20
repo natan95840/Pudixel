@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pudixel 🍮 — Crie e compartilhe pixel arts</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --caramel: #D4821A;
+  --caramel-light: #E8A03A;
+  --cream: #FFF8EE;
+  --cream-dark: #F5EDD8;
+  --brown: #6B3F1A;
+  --brown-soft: #8B5A2B;
+  --pastel-pink: #F5C3A0;
+  --pastel-yellow: #FDE9B0;
+  --pastel-green: #B8E6C4;
+  --pastel-blue: #B0D4F5;
+  --text-dark: #2E1A0E;
+  --text-mid: #6B4226;
+  --danger: #C0392B;
+  --shadow: 0 4px 20px rgba(107,63,26,0.10);
+  --shadow-hover: 0 8px 32px rgba(107,63,26,0.18);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --sidebar-w: 240px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--text-dark);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.pixel { font-family: 'Press Start 2P', monospace; }
+
+/* ── SCREENS ── */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: block; }
+
+/* ── BUTTONS ── */
+.btn { padding: 8px 18px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; transition: all 0.18s ease; }
+.btn-outline { background: transparent; border: 2px solid var(--caramel); color: var(--caramel); }
+.btn-outline:hover { background: var(--caramel); color: #fff; }
+.btn-primary { background: var(--caramel); color: #fff; }
+.btn-primary:hover { background: var(--brown); transform: translateY(-1px); box-shadow: var(--shadow-hover); }
+
+/* ── HOME ── */
+#home { background: var(--cream); }
+
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,248,238,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 2px solid var(--cream-dark);
+  padding: 12px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo-wrap { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.logo-pixel { width: 36px; height: 36px; background: var(--caramel); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+.logo-pixel canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.logo-name { font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--caramel); line-height: 1.4; }
+.logo-name span { display: block; font-size: 7px; color: var(--brown-soft); margin-top: 2px; }
+header nav { display: flex; gap: 10px; align-items: center; }
+
+.hero { padding: 60px 24px 40px; text-align: center; position: relative; overflow: hidden; }
+.hero::before { content: ''; position: absolute; top: -40px; left: 50%; transform: translateX(-50%); width: 600px; height: 600px; background: radial-gradient(ellipse, rgba(212,130,26,0.10) 0%, transparent 70%); pointer-events: none; }
+.hero-pudim { width: 90px; height: 90px; margin: 0 auto 28px; image-rendering: pixelated; animation: float 3s ease-in-out infinite; }
+.hero-pudim canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.hero h1 { font-family: 'Press Start 2P', monospace; font-size: clamp(13px,3.5vw,22px); color: var(--brown); line-height: 1.8; margin-bottom: 16px; }
+.hero h1 span { color: var(--caramel); }
+.hero p { font-size: 16px; color: var(--text-mid); max-width: 380px; margin: 0 auto 32px; line-height: 1.7; }
+.btn-hero { font-family: 'Press Start 2P', monospace; font-size: 11px; padding: 16px 28px; background: var(--caramel); color: #fff; border: none; border-radius: var(--radius); cursor: pointer; box-shadow: 0 6px 0 var(--brown); transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 10px; }
+.btn-hero:hover { transform: translateY(-3px); box-shadow: 0 9px 0 var(--brown); }
+.btn-hero:active { transform: translateY(2px); box-shadow: 0 4px 0 var(--brown); }
+
+.gallery-preview { padding: 20px 16px 0; display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; }
+.gallery-preview::-webkit-scrollbar { display: none; }
+.preview-card { flex-shrink: 0; width: 100px; height: 100px; border-radius: 12px; overflow: hidden; background: var(--cream-dark); border: 2px solid rgba(212,130,26,0.15); }
+.preview-card canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+
+.steps { padding: 48px 24px; }
+.steps h2 { font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--caramel); text-align: center; margin-bottom: 32px; line-height: 1.8; }
+.step-list { display: flex; flex-direction: column; gap: 16px; max-width: 360px; margin: 0 auto; }
+.step-item { display: flex; align-items: flex-start; gap: 16px; background: #fff; border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); border: 1.5px solid var(--cream-dark); transition: transform 0.2s,box-shadow 0.2s; }
+.step-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.step-icon { font-size: 28px; flex-shrink: 0; width: 48px; height: 48px; background: var(--pastel-yellow); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+.step-text h3 { font-size: 14px; font-weight: 600; color: var(--brown); margin-bottom: 4px; }
+.step-text p { font-size: 13px; color: var(--text-mid); line-height: 1.5; }
+
+footer { padding: 24px; text-align: center; border-top: 2px solid var(--cream-dark); color: var(--text-mid); }
+footer .pixel { font-size: 8px; color: var(--caramel); margin-bottom: 8px; display: block; }
+footer p { font-size: 12px; }
+footer a { color: var(--caramel); text-decoration: none; }
+
+/* ── AUTH ── */
+#auth { background: var(--cream); display: none; }
+#auth.active { display: flex; flex-direction: column; min-height: 100vh; }
+.auth-inner { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.auth-box { background: #fff; border-radius: var(--radius); padding: 36px 28px; box-shadow: var(--shadow-hover); width: 100%; max-width: 360px; border: 1.5px solid var(--cream-dark); }
+.auth-logo { text-align: center; margin-bottom: 28px; }
+.auth-logo .pixel { font-size: 13px; color: var(--caramel); display: block; margin-bottom: 4px; }
+.auth-logo p { font-size: 13px; color: var(--text-mid); }
+.auth-tabs { display: flex; border: 2px solid var(--cream-dark); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 24px; }
+.auth-tab { flex: 1; padding: 10px; background: none; border: none; font-family: 'DM Sans',sans-serif; font-size: 14px; cursor: pointer; color: var(--text-mid); transition: all 0.15s; }
+.auth-tab.active { background: var(--caramel); color: #fff; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 12px; color: var(--brown-soft); margin-bottom: 6px; font-weight: 500; }
+.form-group input { width: 100%; padding: 12px 14px; border: 2px solid var(--cream-dark); border-radius: var(--radius-sm); font-size: 15px; font-family: 'DM Sans',sans-serif; background: var(--cream); color: var(--text-dark); outline: none; transition: border 0.15s; }
+.form-group input:focus { border-color: var(--caramel); }
+.auth-submit { width: 100%; padding: 14px; background: var(--caramel); color: #fff; border: none; border-radius: var(--radius-sm); font-family: 'Press Start 2P',monospace; font-size: 10px; cursor: pointer; box-shadow: 0 4px 0 var(--brown); transition: all 0.15s; }
+.auth-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--brown); }
+.auth-submit:active { transform: translateY(1px); box-shadow: 0 3px 0 var(--brown); }
+.pixel-decoration { display: flex; justify-content: center; gap: 6px; margin-top: 24px; }
+.pixel-dot { width: 8px; height: 8px; border-radius: 2px; animation: blink 1.2s ease-in-out infinite; }
+.pixel-dot:nth-child(2) { animation-delay: 0.4s; }
+.pixel-dot:nth-child(3) { animation-delay: 0.8s; }
+@keyframes blink { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+/* ── APP LAYOUT (feed + editor) ── */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* SIDEBAR — só desktop */
+.sidebar {
+  width: var(--sidebar-w);
+  background: #fff;
+  border-right: 2px solid var(--cream-dark);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+  gap: 8px;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 90;
+  overflow-y: auto;
+}
+.sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 8px 0 20px; cursor: pointer; }
+.sidebar-logo canvas { width: 36px; height: 36px; image-rendering: pixelated; background: var(--caramel); border-radius: 8px; display: block; }
+.sidebar-logo span { font-family: 'Press Start 2P',monospace; font-size: 10px; color: var(--caramel); }
+.sidebar-user {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--cream); border-radius: 12px; padding: 10px 12px;
+  margin-bottom: 8px; cursor: pointer; transition: background 0.15s;
+}
+.sidebar-user:hover { background: var(--pastel-yellow); }
+.sidebar-avatar { width: 38px; height: 38px; border-radius: 10px; overflow: hidden; flex-shrink: 0; background: var(--caramel); }
+.sidebar-avatar canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+.sidebar-user-name { font-size: 13px; font-weight: 600; color: var(--brown); }
+.sidebar-user-bio { font-size: 11px; color: var(--text-mid); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+.sidebar-nav-btn {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px; border-radius: 12px;
+  background: none; border: none; cursor: pointer;
+  font-family: 'DM Sans',sans-serif; font-size: 14px; font-weight: 500;
+  color: var(--text-mid); width: 100%; text-align: left;
+  transition: all 0.15s;
+}
+.sidebar-nav-btn:hover { background: var(--cream-dark); color: var(--brown); }
+.sidebar-nav-btn.active { background: var(--pastel-yellow); color: var(--brown); }
+.sidebar-nav-btn span { font-size: 18px; }
+.sidebar-draw-btn {
+  margin-top: auto; padding: 13px;
+  background: var(--caramel); color: #fff;
+  border: none; border-radius: 14px; cursor: pointer;
+  font-family: 'Press Start 2P',monospace; font-size: 9px;
+  box-shadow: 0 4px 0 var(--brown); transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.sidebar-draw-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--brown); }
+.sidebar-logout { margin-top: 8px; padding: 10px 14px; background: none; border: 2px solid var(--cream-dark); border-radius: 12px; cursor: pointer; font-size: 13px; color: var(--text-mid); transition: all 0.15s; }
+.sidebar-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+/* MAIN AREA */
+.main-area {
+  flex: 1;
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+}
+
+/* MOBILE HEADER (oculto no desktop) */
+.mobile-header {
+  display: none;
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,248,238,0.94);
+  backdrop-filter: blur(12px);
+  border-bottom: 2px solid var(--cream-dark);
+  padding: 12px 16px;
+  align-items: center; justify-content: space-between;
+}
+.mobile-header .logo-name { font-size: 10px; }
+.profile-chip { display: flex; align-items: center; gap: 8px; background: var(--cream-dark); border-radius: 20px; padding: 5px 10px 5px 5px; cursor: pointer; transition: background 0.15s; }
+.profile-chip:hover { background: var(--pastel-yellow); }
+.profile-chip-avatar { width: 26px; height: 26px; border-radius: 6px; background: var(--caramel); overflow: hidden; }
+.profile-chip-avatar canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+.profile-chip span { font-size: 13px; font-weight: 500; color: var(--brown); }
+
+/* FEED */
+#feed { display: none; }
+#feed.active { display: block; }
+.feed-tabs-bar { padding: 16px 16px 8px; display: flex; gap: 8px; max-width: 680px; }
+.feed-tab { padding: 7px 16px; border-radius: 20px; border: 2px solid transparent; background: none; font-family: 'DM Sans',sans-serif; font-size: 13px; cursor: pointer; color: var(--text-mid); transition: all 0.15s; }
+.feed-tab.active { background: var(--caramel); color: #fff; border-color: var(--caramel); }
+.feed-content { padding: 8px 16px 80px; max-width: 680px; }
+
+/* DESKTOP: 2 colunas */
+@media (min-width: 900px) {
+  .feed-content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  .feed-content .empty-state { grid-column: 1/-1; }
+}
+
+/* POST CARD */
+.post-card { background: #fff; border-radius: var(--radius); margin-bottom: 20px; box-shadow: var(--shadow); border: 1.5px solid var(--cream-dark); overflow: hidden; transition: transform 0.2s,box-shadow 0.2s; }
+@media (min-width:900px) { .post-card { margin-bottom: 0; } }
+.post-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.post-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
+.post-author { display: flex; align-items: center; gap: 10px; }
+.post-avatar { width: 34px; height: 34px; border-radius: 8px; background: var(--pastel-yellow); overflow: hidden; flex-shrink: 0; }
+.post-avatar canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+.post-username { font-size: 14px; font-weight: 600; color: var(--brown); }
+.post-date { font-size: 11px; color: var(--text-mid); margin-top: 1px; }
+.post-menu-btn { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text-mid); padding: 4px 8px; border-radius: 8px; transition: background 0.12s; line-height: 1; }
+.post-menu-btn:hover { background: var(--cream-dark); }
+.post-canvas-wrap { background: var(--cream-dark); display: flex; align-items: center; justify-content: center; padding: 8px; min-height: 80px; }
+.post-canvas-wrap canvas { image-rendering: pixelated; max-width: 100%; display: block; border-radius: 8px; }
+.post-footer { padding: 12px 16px; }
+.post-desc { font-size: 14px; color: var(--text-dark); margin-bottom: 12px; line-height: 1.5; }
+.post-actions { display: flex; align-items: center; gap: 12px; }
+.pudin-btn { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--pastel-yellow); border: 2px solid transparent; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--brown); transition: all 0.15s; }
+.pudin-btn:hover { background: var(--caramel-light); color: #fff; border-color: var(--caramel); }
+.pudin-btn.liked { background: var(--caramel); color: #fff; }
+.comment-toggle { background: none; border: none; font-size: 13px; color: var(--text-mid); cursor: pointer; padding: 8px; border-radius: 8px; transition: background 0.15s; }
+.comment-toggle:hover { background: var(--cream-dark); }
+
+/* COMMENTS */
+.comments-section { padding: 0 16px 16px; display: none; }
+.comments-section.open { display: block; }
+.comment-input-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
+.comment-input { flex: 1; padding: 10px 14px; border: 2px solid var(--cream-dark); border-radius: 20px; font-size: 13px; font-family: 'DM Sans',sans-serif; background: var(--cream); outline: none; transition: border 0.15s; color: var(--text-dark); }
+.comment-input:focus { border-color: var(--caramel); }
+.comment-send { padding: 10px 16px; background: var(--caramel); color: #fff; border: none; border-radius: 20px; font-size: 13px; cursor: pointer; transition: background 0.15s; }
+.comment-send:hover { background: var(--brown); }
+.comment-item { padding: 8px 0; border-top: 1px solid var(--cream-dark); display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.comment-item-body strong { font-size: 13px; color: var(--brown); }
+.comment-item-body p { font-size: 13px; color: var(--text-dark); margin-top: 2px; line-height: 1.4; }
+.comment-del-btn { background: none; border: none; cursor: pointer; font-size: 14px; color: var(--text-mid); padding: 2px 6px; border-radius: 6px; flex-shrink: 0; transition: all 0.12s; }
+.comment-del-btn:hover { background: #fce4e4; color: var(--danger); }
+
+/* FAB — mobile only */
+.fab { position: fixed; bottom: 24px; right: 24px; width: 60px; height: 60px; background: var(--caramel); border-radius: 16px; border: none; cursor: pointer; font-size: 24px; box-shadow: 0 6px 0 var(--brown),var(--shadow-hover); transition: all 0.15s; z-index: 200; display: none; align-items: center; justify-content: center; }
+.fab:hover { transform: translateY(-3px); box-shadow: 0 9px 0 var(--brown),var(--shadow-hover); }
+.fab:active { transform: translateY(2px); box-shadow: 0 4px 0 var(--brown); }
+.fab.visible { display: flex; }
+
+/* ── EDITOR ── */
+#editor { display: none; }
+#editor.active { display: block; }
+.editor-wrap { max-width: 600px; margin: 0 auto; padding-bottom: 40px; }
+.editor-header-bar { padding: 14px 20px; background: rgba(255,248,238,0.94); backdrop-filter: blur(12px); border-bottom: 2px solid var(--cream-dark); display: flex; align-items: center; gap: 16px; }
+.editor-header-bar h2 { font-family: 'Press Start 2P',monospace; font-size: 9px; color: var(--caramel); flex: 1; line-height: 1.6; }
+.btn-back { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--brown-soft); padding: 4px 8px; border-radius: 8px; transition: background 0.15s; }
+.btn-back:hover { background: var(--cream-dark); }
+
+.size-picker { padding: 32px 24px; text-align: center; }
+.size-picker h3 { font-family: 'Press Start 2P',monospace; font-size: 10px; color: var(--brown); margin-bottom: 24px; line-height: 1.8; }
+.size-options { display: flex; flex-direction: column; gap: 12px; max-width: 320px; margin: 0 auto; }
+.size-opt { padding: 18px 24px; border: 2.5px solid var(--cream-dark); border-radius: var(--radius); background: #fff; cursor: pointer; text-align: left; transition: all 0.15s; display: flex; align-items: center; justify-content: space-between; }
+.size-opt:hover { border-color: var(--caramel); transform: translateX(4px); }
+.size-opt .size-label { font-family: 'Press Start 2P',monospace; font-size: 10px; color: var(--brown); }
+.size-opt .size-hint { font-size: 12px; color: var(--text-mid); margin-top: 4px; }
+
+.canvas-wrap { padding: 16px; display: flex; align-items: flex-start; justify-content: center; overflow: auto; }
+#pixelCanvas { image-rendering: pixelated; cursor: crosshair; border-radius: 8px; box-shadow: var(--shadow-hover); touch-action: none; display: block; }
+
+.tools-bar { padding: 12px 16px; background: #fff; border-top: 2px solid var(--cream-dark); border-bottom: 2px solid var(--cream-dark); display: flex; align-items: center; gap: 10px; overflow-x: auto; scrollbar-width: none; }
+.tools-bar::-webkit-scrollbar { display: none; }
+.tool-btn { width: 44px; height: 44px; border-radius: 10px; border: 2.5px solid var(--cream-dark); background: var(--cream); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.12s; }
+.tool-btn:hover { border-color: var(--caramel); }
+.tool-btn.active { background: var(--caramel); border-color: var(--caramel); }
+
+.color-palette { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 16px; }
+.color-swatch { width: 32px; height: 32px; border-radius: 8px; cursor: pointer; border: 3px solid transparent; transition: all 0.12s; flex-shrink: 0; }
+.color-swatch.active { border-color: var(--brown); transform: scale(1.15); }
+.color-swatch:hover { transform: scale(1.1); }
+.color-picker-wrap { display: flex; align-items: center; gap: 8px; padding: 0 16px 12px; }
+.color-picker-wrap label { font-size: 12px; color: var(--text-mid); }
+#colorPicker { width: 44px; height: 32px; border: none; border-radius: 8px; cursor: pointer; padding: 2px; }
+
+.publish-bar { padding: 16px; display: flex; gap: 10px; align-items: center; }
+.btn-clear { padding: 12px 18px; background: none; border: 2px solid var(--cream-dark); border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; color: var(--text-mid); transition: all 0.15s; }
+.btn-clear:hover { border-color: var(--caramel); color: var(--caramel); }
+.btn-publish { flex: 1; padding: 14px; background: var(--caramel); color: #fff; border: none; border-radius: var(--radius-sm); font-family: 'Press Start 2P',monospace; font-size: 9px; cursor: pointer; box-shadow: 0 4px 0 var(--brown); transition: all 0.15s; }
+.btn-publish:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--brown); }
+
+/* ── MODALS ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(107,63,26,0.35); backdrop-filter: blur(4px); z-index: 300; display: none; align-items: flex-end; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal-sheet { background: #fff; border-radius: 24px 24px 0 0; padding: 28px 24px 40px; width: 100%; max-width: 520px; animation: slideUp 0.25s ease; }
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal-handle { width: 40px; height: 4px; background: var(--cream-dark); border-radius: 2px; margin: 0 auto 24px; }
+.modal-sheet h3 { font-family: 'Press Start 2P',monospace; font-size: 10px; color: var(--brown); margin-bottom: 20px; line-height: 1.8; }
+.publish-preview { display: flex; justify-content: center; margin-bottom: 20px; }
+.publish-preview canvas { image-rendering: pixelated; border-radius: 12px; box-shadow: var(--shadow); width: 128px; height: 128px; }
+.publish-desc { width: 100%; padding: 12px 14px; border: 2px solid var(--cream-dark); border-radius: var(--radius-sm); font-size: 14px; font-family: 'DM Sans',sans-serif; background: var(--cream); outline: none; transition: border 0.15s; resize: none; margin-bottom: 16px; color: var(--text-dark); }
+.publish-desc:focus { border-color: var(--caramel); }
+.modal-actions { display: flex; gap: 10px; }
+.btn-cancel { padding: 14px 20px; background: none; border: 2px solid var(--cream-dark); border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; color: var(--text-mid); transition: all 0.15s; }
+.btn-cancel:hover { border-color: var(--caramel); }
+.btn-confirm-publish { flex: 1; padding: 14px; background: var(--caramel); color: #fff; border: none; border-radius: var(--radius-sm); font-family: 'Press Start 2P',monospace; font-size: 9px; cursor: pointer; box-shadow: 0 4px 0 var(--brown); transition: all 0.15s; }
+.btn-confirm-publish:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--brown); }
+
+/* CONFIRM MODAL */
+.confirm-modal { position: fixed; inset: 0; background: rgba(107,63,26,0.35); backdrop-filter: blur(4px); z-index: 500; display: none; align-items: center; justify-content: center; padding: 24px; }
+.confirm-modal.open { display: flex; }
+.confirm-box { background: #fff; border-radius: var(--radius); padding: 28px 24px; max-width: 320px; width: 100%; box-shadow: var(--shadow-hover); text-align: center; }
+.confirm-box p { font-size: 15px; color: var(--text-dark); margin-bottom: 20px; line-height: 1.5; }
+.confirm-box .confirm-btns { display: flex; gap: 10px; }
+.confirm-box .confirm-btns button { flex: 1; padding: 12px; border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; transition: all 0.15s; font-weight: 500; }
+.confirm-no { background: none; border: 2px solid var(--cream-dark); color: var(--text-mid); }
+.confirm-no:hover { border-color: var(--caramel); }
+.confirm-yes { background: var(--danger); border: none; color: #fff; }
+.confirm-yes:hover { background: #922b21; }
+
+/* PROFILE MODAL */
+.profile-modal-body { display: flex; flex-direction: column; gap: 16px; }
+.profile-avatar-row { display: flex; align-items: center; gap: 16px; }
+.profile-big-avatar { width: 64px; height: 64px; border-radius: 14px; overflow: hidden; background: var(--caramel); flex-shrink: 0; }
+.profile-big-avatar canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+.profile-avatar-colors { display: flex; gap: 8px; flex-wrap: wrap; }
+.profile-avatar-color-btn { width: 28px; height: 28px; border-radius: 6px; border: 3px solid transparent; cursor: pointer; transition: all 0.12s; }
+.profile-avatar-color-btn.active { border-color: var(--brown); transform: scale(1.15); }
+.profile-field-label { font-size: 12px; color: var(--brown-soft); font-weight: 500; margin-bottom: 6px; display: block; }
+.profile-bio-input { width: 100%; padding: 12px 14px; border: 2px solid var(--cream-dark); border-radius: var(--radius-sm); font-size: 14px; font-family: 'DM Sans',sans-serif; background: var(--cream); color: var(--text-dark); outline: none; transition: border 0.15s; resize: none; }
+.profile-bio-input:focus { border-color: var(--caramel); }
+.btn-save-profile { width: 100%; padding: 14px; background: var(--caramel); color: #fff; border: none; border-radius: var(--radius-sm); font-family: 'Press Start 2P',monospace; font-size: 9px; cursor: pointer; box-shadow: 0 4px 0 var(--brown); transition: all 0.15s; }
+.btn-save-profile:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--brown); }
+
+/* POST DROPDOWN MENU */
+.post-dropdown { position: relative; }
+.post-dropdown-menu { position: absolute; top: calc(100% + 4px); right: 0; background: #fff; border-radius: 12px; box-shadow: var(--shadow-hover); border: 1.5px solid var(--cream-dark); min-width: 140px; z-index: 50; overflow: hidden; display: none; }
+.post-dropdown-menu.open { display: block; }
+.post-dropdown-menu button { display: block; width: 100%; padding: 11px 16px; background: none; border: none; font-size: 14px; cursor: pointer; text-align: left; color: var(--text-dark); transition: background 0.12s; }
+.post-dropdown-menu button:hover { background: var(--cream-dark); }
+.post-dropdown-menu button.danger { color: var(--danger); }
+
+/* TOAST */
+.toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--brown); color: #fff; padding: 12px 24px; border-radius: 20px; font-size: 13px; font-weight: 500; opacity: 0; pointer-events: none; transition: all 0.3s ease; z-index: 600; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.pudin-float { position: fixed; pointer-events: none; font-size: 20px; animation: floatUp 0.8s ease forwards; z-index: 700; }
+@keyframes floatUp { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(-60px) scale(1.4); } }
+
+.empty-state { text-align: center; padding: 48px 24px; color: var(--text-mid); }
+.empty-state .pixel { font-size: 9px; color: var(--caramel); margin-bottom: 12px; display: block; }
+.empty-state p { font-size: 14px; }
+
+/* LOADING */
+.loading-overlay { position: fixed; inset: 0; background: var(--cream); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+.loading-overlay.hidden { display: none; }
+.loading-overlay .pixel { font-size: 12px; color: var(--caramel); }
+.loading-dots { display: flex; gap: 8px; }
+.loading-dot { width: 10px; height: 10px; background: var(--caramel); border-radius: 2px; animation: blink 0.9s ease-in-out infinite; }
+.loading-dot:nth-child(2) { animation-delay: 0.3s; }
+.loading-dot:nth-child(3) { animation-delay: 0.6s; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main-area { margin-left: 0; }
+  .mobile-header { display: flex; }
+  .fab.visible { display: flex; }
+  .feed-tabs-bar { padding-top: 12px; }
+}
+@media (min-width: 769px) {
+  .mobile-header { display: none !important; }
+  .fab { display: none !important; }
+}
+
+/* User menu (mobile dropdown) */
+.user-menu { position: absolute; top: 56px; right: 16px; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-hover); border: 1.5px solid var(--cream-dark); z-index: 200; min-width: 160px; overflow: hidden; display: none; }
+.user-menu.open { display: block; }
+.user-menu button { display: block; width: 100%; padding: 12px 16px; text-align: left; background: none; border: none; font-size: 14px; cursor: pointer; color: var(--text-dark); transition: background 0.12s; }
+.user-menu button:hover { background: var(--cream-dark); }
+.user-menu button.danger { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <span class="pixel">Pudixel</span>
+  <div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>
+</div>
+
+<!-- ═══════════════ HOME ═══════════════ -->
+<div id="home" class="screen">
+  <header>
+    <div class="logo-wrap" onclick="showScreen('home')">
+      <div class="logo-pixel"><canvas id="logoCanvas" width="16" height="16"></canvas></div>
+      <div class="logo-name">Pudixel<span>pixel art social</span></div>
+    </div>
+    <nav>
+      <button class="btn btn-outline" onclick="showScreen('auth');setTab('login')">Entrar</button>
+      <button class="btn btn-primary" onclick="showScreen('auth');setTab('register')">Criar conta</button>
+    </nav>
+  </header>
+  <main>
+    <section class="hero">
+      <div class="hero-pudim"><canvas id="heroPudim" width="32" height="32"></canvas></div>
+      <h1>Crie e compartilhe<br><span>pixel arts</span><br>direto do navegador.</h1>
+      <p>Um cantinho da internet feito só para isso. Sem distrações. Só arte.</p>
+      <button class="btn-hero" onclick="showScreen('auth');setTab('register')">🍮 Começar agora</button>
+    </section>
+    <section style="padding:0 16px 8px">
+      <p style="font-size:12px;color:var(--text-mid);text-align:center;margin-bottom:10px;">Prévia do estilo Pudixel</p>
+      <div class="gallery-preview" id="galleryPreview"></div>
+    </section>
+    <section class="steps">
+      <h2>Como funciona?</h2>
+      <div class="step-list">
+        <div class="step-item"><div class="step-icon">🖌️</div><div class="step-text"><h3>Desenhe online</h3><p>Editor de pixel art simples, funciona no celular também.</p></div></div>
+        <div class="step-item"><div class="step-icon">📤</div><div class="step-text"><h3>Publique instantaneamente</h3><p>Compartilhe sua arte com a comunidade em segundos.</p></div></div>
+        <div class="step-item"><div class="step-icon">🍮</div><div class="step-text"><h3>Receba pudins</h3><p>A comunidade curte artes com pudins. Simples assim.</p></div></div>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <span class="pixel">Pudixel</span>
+    <p>© 2025 Pudixel · <a href="#">Termos</a> · <a href="#">Privacidade</a></p>
+  </footer>
+</div>
+
+<!-- ═══════════════ AUTH ═══════════════ -->
+<div id="auth" class="screen">
+  <header>
+    <div class="logo-wrap" onclick="showScreen('home')">
+      <div class="logo-pixel"><canvas id="logoCanvasAuth" width="16" height="16"></canvas></div>
+      <div class="logo-name">Pudixel</div>
+    </div>
+    <nav><button class="btn btn-outline" onclick="showScreen('home')">← Voltar</button></nav>
+  </header>
+  <div class="auth-inner">
+    <div class="auth-box">
+      <div class="auth-logo">
+        <canvas id="authPudim" width="32" height="32" style="width:48px;height:48px;image-rendering:pixelated;display:block;margin:0 auto 8px;"></canvas>
+        <span class="pixel">Pudixel</span>
+        <p>Bem-vindo de volta 🍮</p>
+      </div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="loginTab" onclick="setTab('login')">Entrar</button>
+        <button class="auth-tab" id="registerTab" onclick="setTab('register')">Criar conta</button>
+      </div>
+      <div id="loginForm">
+        <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="seu@email.com"></div>
+        <div class="form-group"><label>Senha</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+        <button class="auth-submit" onclick="doLogin()">🍮 Entrar</button>
+      </div>
+      <div id="registerForm" style="display:none">
+        <div class="form-group"><label>Nome de usuário</label><input type="text" id="regUser" placeholder="seuNome"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="regEmail" placeholder="seu@email.com"></div>
+        <div class="form-group"><label>Senha</label><input type="password" id="regPass" placeholder="••••••••"></div>
+        <button class="auth-submit" onclick="doRegister()">🍮 Criar conta</button>
+      </div>
+      <div class="pixel-decoration">
+        <div class="pixel-dot" style="background:var(--caramel)"></div>
+        <div class="pixel-dot" style="background:var(--pastel-pink)"></div>
+        <div class="pixel-dot" style="background:var(--pastel-green)"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ APP (feed + editor) ═══════════════ -->
+<div id="appShell" class="screen">
+  <div class="app-layout">
+
+    <!-- SIDEBAR DESKTOP -->
+    <aside class="sidebar">
+      <div class="sidebar-logo" onclick="switchAppView('feed')">
+        <canvas id="sidebarLogo" width="16" height="16"></canvas>
+        <span>Pudixel</span>
+      </div>
+      <div class="sidebar-user" onclick="openProfileModal()" id="sidebarUser">
+        <div class="sidebar-avatar"><canvas id="sidebarAvatar" width="8" height="8"></canvas></div>
+        <div style="overflow:hidden">
+          <div class="sidebar-user-name" id="sidebarUsername">@user</div>
+          <div class="sidebar-user-bio" id="sidebarBio">Sem bio ainda</div>
+        </div>
+      </div>
+      <button class="sidebar-nav-btn active" id="sidebarBtnFeed" onclick="switchAppView('feed');setSidebarActive(this)"><span>🏠</span> Explorar</button>
+      <button class="sidebar-nav-btn" id="sidebarBtnMine" onclick="switchAppView('mine');setSidebarActive(this)"><span>🎨</span> Minhas artes</button>
+      <button class="sidebar-nav-btn" onclick="openProfileModal()"><span>👤</span> Meu perfil</button>
+      <button class="sidebar-draw-btn" onclick="switchAppView('editor')">🎨 Desenhar</button>
+      <button class="sidebar-logout" onclick="doLogout()">Sair</button>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main-area">
+
+      <!-- MOBILE HEADER -->
+      <div class="mobile-header" id="mobileHeader">
+        <div class="logo-wrap" onclick="switchAppView('feed')">
+          <div class="logo-pixel"><canvas id="logoCanvasMobile" width="16" height="16"></canvas></div>
+          <div class="logo-name">Pudixel</div>
+        </div>
+        <div style="position:relative">
+          <div class="profile-chip" onclick="toggleUserMenu()">
+            <div class="profile-chip-avatar"><canvas id="chipAvatar" width="8" height="8"></canvas></div>
+            <span id="chipName">@user</span>
+          </div>
+          <div class="user-menu" id="userMenu">
+            <button onclick="openProfileModal();toggleUserMenu()">👤 Meu perfil</button>
+            <button onclick="switchAppView('editor');toggleUserMenu()">🎨 Desenhar</button>
+            <button onclick="doLogout()" class="danger">Sair</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FEED VIEW -->
+      <div id="feedView">
+        <div class="feed-tabs-bar">
+          <button class="feed-tab active" id="tabAll" onclick="switchFeedTab('all',this)">Todas</button>
+          <button class="feed-tab" id="tabMine" onclick="switchFeedTab('mine',this)">Minhas</button>
+        </div>
+        <div class="feed-content" id="feedContent"></div>
+      </div>
+
+      <!-- EDITOR VIEW -->
+      <div id="editorView" style="display:none">
+        <div class="editor-wrap">
+          <div class="editor-header-bar">
+            <button class="btn-back" onclick="switchAppView('feed')">←</button>
+            <h2>Editor de Pixel Art</h2>
+          </div>
+          <div id="sizePicker" class="size-picker">
+            <h3>Escolha o<br>tamanho do canvas</h3>
+            <div class="size-options">
+              <button class="size-opt" onclick="startEditor(16)"><div><div class="size-label">16 × 16</div><div class="size-hint">Ícones e sprites simples</div></div><span style="font-size:22px">🐣</span></button>
+              <button class="size-opt" onclick="startEditor(32)"><div><div class="size-label">32 × 32</div><div class="size-hint">Personagens e objetos</div></div><span style="font-size:22px">🍮</span></button>
+              <button class="size-opt" onclick="startEditor(64)"><div><div class="size-label">64 × 64</div><div class="size-hint">Cenas e ilustrações</div></div><span style="font-size:22px">🌆</span></button>
+            </div>
+          </div>
+          <div id="editorArea" style="display:none">
+            <div class="canvas-wrap"><canvas id="pixelCanvas"></canvas></div>
+            <div class="tools-bar">
+              <button class="tool-btn active" id="toolPencil" onclick="setTool('pencil')" title="Lápis">✏️</button>
+              <button class="tool-btn" id="toolEraser" onclick="setTool('eraser')" title="Borracha">🧹</button>
+              <button class="tool-btn" id="toolFill" onclick="setTool('fill')" title="Balde">🪣</button>
+              <div style="width:2px;height:36px;background:var(--cream-dark);border-radius:1px;flex-shrink:0"></div>
+              <button class="tool-btn" onclick="undoAction()" title="Desfazer">↩️</button>
+            </div>
+            <div class="color-palette" id="colorPalette"></div>
+            <div class="color-picker-wrap">
+              <label>Cor personalizada:</label>
+              <input type="color" id="colorPicker" value="#D4821A">
+            </div>
+            <div class="publish-bar">
+              <button class="btn-clear" onclick="clearCanvas()">Limpar</button>
+              <button class="btn-publish" onclick="openPublishModal()">🍮 Publicar arte</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /main-area -->
+  </div><!-- /app-layout -->
+  <button class="fab visible" onclick="switchAppView('editor')">🎨</button>
+</div>
+
+<!-- ── PUBLISH MODAL ── -->
+<div class="modal-overlay" id="publishModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h3>Publicar arte 🍮</h3>
+    <div class="publish-preview"><canvas id="publishPreview"></canvas></div>
+    <textarea class="publish-desc" id="publishDesc" rows="3" placeholder="Descreva sua arte... (opcional)"></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closePublishModal()">Cancelar</button>
+      <button class="btn-confirm-publish" onclick="publishArt()">🍮 Publicar!</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PROFILE MODAL ── -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h3>Meu perfil</h3>
+    <div class="profile-modal-body">
+      <div class="profile-avatar-row">
+        <div class="profile-big-avatar"><canvas id="profilePreviewCanvas" width="8" height="8" style="width:64px;height:64px;image-rendering:pixelated;display:block"></canvas></div>
+        <div>
+          <span class="profile-field-label">Cor do avatar</span>
+          <div class="profile-avatar-colors" id="avatarColorPicker"></div>
+        </div>
+      </div>
+      <div>
+        <span class="profile-field-label">Biografia (máx. 80 caracteres)</span>
+        <textarea class="profile-bio-input" id="profileBioInput" rows="2" maxlength="80" placeholder="Conte algo sobre você..."></textarea>
+      </div>
+      <button class="btn-save-profile" onclick="saveProfile()">🍮 Salvar perfil</button>
+      <button class="btn-cancel" style="width:100%;margin-top:4px" onclick="closeProfileModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONFIRM MODAL ── -->
+<div class="confirm-modal" id="confirmModal">
+  <div class="confirm-box">
+    <p id="confirmText">Tem certeza?</p>
+    <div class="confirm-btns">
+      <button class="confirm-no" onclick="closeConfirm()">Cancelar</button>
+      <button class="confirm-yes" id="confirmYesBtn">Deletar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// SUPABASE
+// ═══════════════════════════════════════════════
+const SUPA_URL = 'https://briyrsxowqqdxmxelhdj.supabase.co';
+const SUPA_KEY = 'sb_publishable_8V0fMdHJf_p52w_FHBhyOw_xAsjh6QX';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let currentUser   = null;  // { id, username, bio, avatar_color }
+let currentSession = null;
+let posts         = [];
+let currentFeedTab = 'all';
+let activeTool    = 'pencil';
+let currentColor  = '#D4821A';
+let canvasSize    = 16;
+let pixelMatrix   = [];
+let history       = [];
+let isDrawing     = false;
+let lastPixel     = null;
+let editCtx       = null;
+let profileAvatarColor = '#D4821A';
+
+const COLORS = [
+  '#D4821A','#8B5A2B','#FDE9B0','#F5C3A0',
+  '#6B3F1A','#FFF8EE','#B8E6C4','#B0D4F5',
+  '#F5A623','#E8746A','#7EC8A4','#6AB0D4',
+  '#2E1A0E','#F9F4EA','#D4B8A0','#A0C4D4',
+  '#FFFFFF','#000000',
+];
+const AVATAR_COLORS = ['#D4821A','#E8746A','#7EC8A4','#6AB0D4','#9B59B6','#F5A623','#2E1A0E','#5DADE2'];
+
+// ═══════════════════════════════════════════════
+// PIXEL ART HELPERS
+// ═══════════════════════════════════════════════
+function drawPudim(ctx,w,h){
+  ctx.imageSmoothingEnabled=false;
+  const s=w/16;
+  const px=(x,y,c)=>{ctx.fillStyle=c;ctx.fillRect(x*s,y*s,s,s);};
+  [[4,3],[5,3],[6,3],[7,3],[8,3],[9,3],[10,3],[3,4],[4,4],[5,4],[6,4],[7,4],[8,4],[9,4],[10,4],[11,4],[3,5],[4,5],[5,5],[6,5],[7,5],[8,5],[9,5],[10,5],[11,5],[3,6],[4,6],[5,6],[6,6],[7,6],[8,6],[9,6],[10,6],[11,6],[3,7],[4,7],[5,7],[6,7],[7,7],[8,7],[9,7],[10,7],[11,7],[3,8],[4,8],[5,8],[6,8],[7,8],[8,8],[9,8],[10,8],[11,8]].forEach(([x,y])=>px(x,y,'#D4821A'));
+  [[4,9],[5,9],[6,9],[7,9],[8,9],[9,9],[10,9],[3,10],[4,10],[5,10],[6,10],[7,10],[8,10],[9,10],[10,10],[11,10],[3,11],[4,11],[5,11],[6,11],[7,11],[8,11],[9,11],[10,11],[11,11]].forEach(([x,y])=>px(x,y,'#FFF8EE'));
+  [[2,12],[3,12],[4,12],[5,12],[6,12],[7,12],[8,12],[9,12],[10,12],[11,12],[12,12],[2,13],[3,13],[4,13],[5,13],[6,13],[7,13],[8,13],[9,13],[10,13],[11,13],[12,13]].forEach(([x,y])=>px(x,y,'#FDE9B0'));
+  [[5,1],[6,1],[7,1],[8,1],[9,1],[4,2],[5,2],[6,2],[7,2],[8,2],[9,2],[10,2]].forEach(([x,y])=>px(x,y,'#E8A03A'));
+  px(6,6,'#6B3F1A');px(9,6,'#6B3F1A');px(6,8,'#6B3F1A');px(9,8,'#6B3F1A');px(7,9,'#6B3F1A');px(8,9,'#6B3F1A');
+}
+
+function drawLogoIcon(ctx,w,h){
+  ctx.imageSmoothingEnabled=false;
+  ctx.fillStyle='#D4821A';ctx.fillRect(0,0,w,h);
+  const s=w/8;
+  [[1,1,'#FDE9B0'],[2,1,'#FDE9B0'],[3,1,'#FDE9B0'],[4,1,'#FDE9B0'],[5,1,'#FDE9B0'],[1,2,'#D4821A'],[2,2,'#D4821A'],[3,2,'#D4821A'],[4,2,'#D4821A'],[5,2,'#D4821A'],[1,3,'#FFF8EE'],[2,3,'#FFF8EE'],[3,3,'#FFF8EE'],[4,3,'#FFF8EE'],[5,3,'#FFF8EE'],[0,4,'#FDE9B0'],[1,4,'#FDE9B0'],[2,4,'#FDE9B0'],[3,4,'#FDE9B0'],[4,4,'#FDE9B0'],[5,4,'#FDE9B0'],[6,4,'#FDE9B0'],[2,2,'#6B3F1A'],[4,2,'#6B3F1A']].forEach(([x,y,c])=>{ctx.fillStyle=c;ctx.fillRect(x*s,y*s,s,s);});
+}
+
+function drawAvatarArt(ctx, username, color){
+  const seed=String(username).split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  const rng=mulberry32(seed);
+  const bg=color||AVATAR_COLORS[seed%AVATAR_COLORS.length];
+  ctx.fillStyle=bg;ctx.fillRect(0,0,8,8);
+  for(let y=0;y<8;y++){for(let x=0;x<4;x++){if(rng()>0.6){ctx.fillStyle='rgba(0,0,0,0.45)';ctx.fillRect(x,y,1,1);ctx.fillRect(7-x,y,1,1);}}}
+}
+
+function drawMiniArt(ctx,seed,size){
+  ctx.imageSmoothingEnabled=false;
+  const rng=mulberry32(seed);
+  const pals=[['#D4821A','#FDE9B0','#6B3F1A','#FFF8EE'],['#B0D4F5','#6AB0D4','#2E4A6B','#FFF8EE'],['#B8E6C4','#7EC8A4','#1A5A36','#FFF8EE'],['#F5C3A0','#E8746A','#6B1A1A','#FFF8EE'],['#D4B8A0','#A07850','#4A2810','#FFF8EE']];
+  const pal=pals[seed%pals.length];
+  ctx.fillStyle=pal[3];ctx.fillRect(0,0,size,size);
+  for(let y=0;y<size;y++){for(let x=0;x<size;x++){const v=rng();if(v<0.15){ctx.fillStyle=pal[0];ctx.fillRect(x,y,1,1);}else if(v<0.25){ctx.fillStyle=pal[1];ctx.fillRect(x,y,1,1);}else if(v<0.3){ctx.fillStyle=pal[2];ctx.fillRect(x,y,1,1);}}}
+}
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+// ═══════════════════════════════════════════════
+// INIT VISUALS
+// ═══════════════════════════════════════════════
+function initVisuals(){
+  [['logoCanvas',16],['logoCanvasAuth',16],['sidebarLogo',16],['logoCanvasMobile',16]].forEach(([id,s])=>{const c=document.getElementById(id);if(c){drawLogoIcon(c.getContext('2d'),s,s);}});
+  [['heroPudim',32],['authPudim',32]].forEach(([id,s])=>{const c=document.getElementById(id);if(c){drawPudim(c.getContext('2d'),s,s);}});
+  const gp=document.getElementById('galleryPreview');
+  if(gp){for(let i=0;i<8;i++){const div=document.createElement('div');div.className='preview-card';const c=document.createElement('canvas');c.width=32;c.height=32;drawMiniArt(c.getContext('2d'),i*17+3,32);div.appendChild(c);gp.appendChild(div);}}
+}
+
+function updateUIForUser(){
+  if(!currentUser)return;
+  const color=currentUser.avatar_color||'#D4821A';
+  const bio=currentUser.bio||'Sem bio ainda';
+  const name='@'+currentUser.username;
+  document.getElementById('sidebarUsername').textContent=name;
+  document.getElementById('sidebarBio').textContent=bio;
+  document.getElementById('chipName').textContent=name;
+  ['sidebarAvatar','chipAvatar'].forEach(id=>{const c=document.getElementById(id);if(c)drawAvatarArt(c.getContext('2d'),currentUser.username,color);});
+}
+
+// ═══════════════════════════════════════════════
+// SCREEN & VIEW NAV
+// ═══════════════════════════════════════════════
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(name==='feed'||name==='editor'?'appShell':name).classList.add('active');
+  if(name==='home'||name==='auth'){document.getElementById('appShell')?.classList.remove('active');}
+  document.getElementById('userMenu')?.classList.remove('open');
+}
+
+function switchAppView(view){
+  document.getElementById('appShell').classList.add('active');
+  document.querySelectorAll('.screen').forEach(s=>{if(s.id!=='appShell')s.classList.remove('active');});
+  const feedView=document.getElementById('feedView');
+  const editorView=document.getElementById('editorView');
+  if(view==='editor'){
+    feedView.style.display='none';
+    editorView.style.display='';
+    document.getElementById('sizePicker').style.display='';
+    document.getElementById('editorArea').style.display='none';
+  } else {
+    feedView.style.display='';
+    editorView.style.display='none';
+    if(view==='mine'){
+      switchFeedTab('mine', document.getElementById('tabMine'));
+    } else {
+      switchFeedTab('all', document.getElementById('tabAll'));
+    }
+  }
+  document.getElementById('userMenu')?.classList.remove('open');
+}
+
+function setSidebarActive(btn){
+  document.querySelectorAll('.sidebar-nav-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════
+function setTab(tab){
+  const lt=document.getElementById('loginTab'),rt=document.getElementById('registerTab');
+  const lf=document.getElementById('loginForm'),rf=document.getElementById('registerForm');
+  if(tab==='login'){lt.classList.add('active');rt.classList.remove('active');lf.style.display='';rf.style.display='none';}
+  else{rt.classList.add('active');lt.classList.remove('active');rf.style.display='';lf.style.display='none';}
+}
+
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  if(!email||!pass){showToast('Preencha todos os campos 🍮');return;}
+  showToast('Entrando...');
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){showToast('Email ou senha incorretos!');return;}
+  await afterAuth(data.session);
+}
+
+async function doRegister(){
+  const username=document.getElementById('regUser').value.trim().replace('@','');
+  const email=document.getElementById('regEmail').value.trim();
+  const pass=document.getElementById('regPass').value;
+  if(!username||!email||!pass){showToast('Preencha todos os campos 🍮');return;}
+  if(pass.length<6){showToast('Senha mínima: 6 caracteres.');return;}
+  if(!/^[a-zA-Z0-9_]+$/.test(username)){showToast('Usuário: apenas letras, números e _');return;}
+  showToast('Criando conta...');
+  const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{username}}});
+  if(error){showToast('Erro: '+error.message);return;}
+  // Cria perfil na tabela profiles
+  if(data.user){
+    await sb.from('profiles').upsert({id:data.user.id,username,bio:'',avatar_color:'#D4821A'});
+  }
+  await afterAuth(data.session);
+  if(!data.session)showToast('Verifique seu email para confirmar! 🍮');
+}
+
+async function afterAuth(session){
+  if(!session)return;
+  currentSession=session;
+  const userId=session.user.id;
+  // Busca perfil
+  const {data:profile}=await sb.from('profiles').select('*').eq('id',userId).single();
+  currentUser={
+    id:userId,
+    username:profile?.username||session.user.user_metadata?.username||session.user.email.split('@')[0],
+    bio:profile?.bio||'',
+    avatar_color:profile?.avatar_color||'#D4821A',
+  };
+  updateUIForUser();
+  await loadPosts();
+  showScreen('feed');
+  switchAppView('feed');
+  showToast(`Bem-vindo, @${currentUser.username}! 🍮`);
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  currentUser=null;currentSession=null;posts=[];
+  showScreen('home');
+  document.getElementById('appShell').classList.remove('active');
+  document.getElementById('home').classList.add('active');
+  showToast('Até a próxima! 🍮');
+}
+
+function toggleUserMenu(){document.getElementById('userMenu').classList.toggle('open');}
+
+// ═══════════════════════════════════════════════
+// PROFILE
+// ═══════════════════════════════════════════════
+function openProfileModal(){
+  if(!currentUser)return;
+  document.getElementById('profileBioInput').value=currentUser.bio||'';
+  profileAvatarColor=currentUser.avatar_color||'#D4821A';
+  buildAvatarColorPicker();
+  refreshProfilePreview();
+  document.getElementById('profileModal').classList.add('open');
+}
+function closeProfileModal(){document.getElementById('profileModal').classList.remove('open');}
+
+function buildAvatarColorPicker(){
+  const wrap=document.getElementById('avatarColorPicker');wrap.innerHTML='';
+  AVATAR_COLORS.forEach(c=>{
+    const btn=document.createElement('button');
+    btn.className='profile-avatar-color-btn'+(c===profileAvatarColor?' active':'');
+    btn.style.background=c;
+    btn.onclick=()=>{profileAvatarColor=c;document.querySelectorAll('.profile-avatar-color-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');refreshProfilePreview();};
+    wrap.appendChild(btn);
+  });
+}
+
+function refreshProfilePreview(){
+  const c=document.getElementById('profilePreviewCanvas');
+  if(c)drawAvatarArt(c.getContext('2d'),currentUser.username,profileAvatarColor);
+}
+
+async function saveProfile(){
+  const bio=document.getElementById('profileBioInput').value.trim();
+  const {error}=await sb.from('profiles').update({bio,avatar_color:profileAvatarColor}).eq('id',currentUser.id);
+  if(error){showToast('Erro ao salvar perfil.');return;}
+  currentUser.bio=bio;currentUser.avatar_color=profileAvatarColor;
+  updateUIForUser();
+  closeProfileModal();
+  showToast('Perfil salvo! 🍮');
+  renderFeed();
+}
+
+// ═══════════════════════════════════════════════
+// POSTS — SUPABASE
+// ═══════════════════════════════════════════════
+async function loadPosts(){
+  const {data,error}=await sb.from('posts')
+    .select('*, comments(*), pudins(*)')
+    .order('created_at',{ascending:false});
+  if(error){showToast('Erro ao carregar posts.');return;}
+  posts=data||[];
+  renderFeed();
+}
+
+function renderFeed(){
+  const container=document.getElementById('feedContent');
+  const filtered=currentFeedTab==='mine'
+    ?posts.filter(p=>p.user_id===currentUser?.id)
+    :posts;
+  if(filtered.length===0){
+    container.innerHTML=`<div class="empty-state"><span class="pixel">Sem artes ainda</span><p>${currentFeedTab==='mine'?'Publique sua primeira arte! 🎨':'A comunidade ainda está quieta 🍮'}</p></div>`;
+    return;
+  }
+  container.innerHTML='';
+  filtered.forEach(post=>{container.appendChild(createPostCard(post));});
+}
+
+function createPostCard(post){
+  const card=document.createElement('div');
+  card.className='post-card';
+  card.id='post-card-'+post.id;
+  const date=new Date(post.created_at);
+  const dateStr=date.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+  const pudinsArr=post.pudins||[];
+  const liked=pudinsArr.some(p=>p.user_id===currentUser?.id);
+  const pudimCount=pudinsArr.length;
+  const commentsArr=post.comments||[];
+  const isOwner=post.user_id===currentUser?.id;
+  const avatarColor=post.avatar_color||'#D4821A';
+
+  card.innerHTML=`
+    <div class="post-header">
+      <div class="post-author">
+        <div class="post-avatar"><canvas width="8" height="8"></canvas></div>
+        <div><div class="post-username">@${escHtml(post.username)}</div><div class="post-date">${dateStr}</div></div>
+      </div>
+      ${isOwner?`<div class="post-dropdown">
+        <button class="post-menu-btn" onclick="togglePostMenu('${post.id}',this)">⋯</button>
+        <div class="post-dropdown-menu" id="pdm-${post.id}">
+          <button class="danger" onclick="confirmDeletePost('${post.id}')">🗑 Deletar arte</button>
+        </div>
+      </div>`:''}
+    </div>
+    <div class="post-canvas-wrap"><canvas class="art-canvas" data-size="${post.canvas_size}"></canvas></div>
+    <div class="post-footer">
+      ${post.description?`<div class="post-desc">${escHtml(post.description)}</div>`:''}
+      <div class="post-actions">
+        <button class="pudin-btn ${liked?'liked':''}" id="pudin-btn-${post.id}" onclick="togglePudin('${post.id}',this)">
+          🍮 <span class="count">${pudimCount}</span>
+        </button>
+        <button class="comment-toggle" onclick="toggleComments('${post.id}',this)">💬 ${commentsArr.length}</button>
+      </div>
+    </div>
+    <div class="comments-section" id="comments-${post.id}">
+      <div class="comment-input-wrap">
+        <input class="comment-input" placeholder="Comentar..." id="cinput-${post.id}">
+        <button class="comment-send" onclick="sendComment('${post.id}')">↗</button>
+      </div>
+      <div id="clist-${post.id}">${commentsArr.map(c=>commentHTML(c)).join('')}</div>
+    </div>`;
+
+  // Avatar
+  const avatarCanvas=card.querySelector('.post-avatar canvas');
+  drawAvatarArt(avatarCanvas.getContext('2d'),post.username,post.avatar_color||'#D4821A');
+
+  // Art canvas
+  const artCanvas=card.querySelector('.art-canvas');
+  const sz=post.canvas_size||16;
+  const dispSize=Math.min(sz*(sz<=16?14:sz<=32?8:4),340);
+  artCanvas.width=sz;artCanvas.height=sz;
+  artCanvas.style.width=dispSize+'px';artCanvas.style.height=dispSize+'px';
+  const octx=artCanvas.getContext('2d');
+  octx.imageSmoothingEnabled=false;
+  try{const px=JSON.parse(post.pixels);renderPixelsToCanvas(octx,px,sz);}catch(e){}
+
+  return card;
+}
+
+function commentHTML(c){
+  const isOwner=c.user_id===currentUser?.id;
+  return `<div class="comment-item" id="comment-${c.id}">
+    <div class="comment-item-body"><strong>@${escHtml(c.username)}</strong><p>${escHtml(c.content)}</p></div>
+    ${isOwner?`<button class="comment-del-btn" onclick="confirmDeleteComment('${c.id}','${c.post_id}')">✕</button>`:''}
+  </div>`;
+}
+
+function togglePostMenu(postId,btn){
+  const menu=document.getElementById('pdm-'+postId);
+  // fecha outros
+  document.querySelectorAll('.post-dropdown-menu.open').forEach(m=>{if(m.id!=='pdm-'+postId)m.classList.remove('open');});
+  menu.classList.toggle('open');
+}
+
+// ── Pudins ──
+async function togglePudin(postId,btn){
+  if(!currentUser){showToast('Faça login para pudinar! 🍮');return;}
+  const post=posts.find(p=>p.id===postId);if(!post)return;
+  const existing=post.pudins.find(p=>p.user_id===currentUser.id);
+  if(existing){
+    await sb.from('pudins').delete().eq('id',existing.id);
+    post.pudins=post.pudins.filter(p=>p.id!==existing.id);
+    btn.classList.remove('liked');
+  } else {
+    const {data}=await sb.from('pudins').insert({post_id:postId,user_id:currentUser.id}).select().single();
+    if(data)post.pudins.push(data);
+    btn.classList.add('liked');
+    spawnPudinFloat(btn);
+  }
+  btn.querySelector('.count').textContent=post.pudins.length;
+}
+
+function spawnPudinFloat(btn){
+  const rect=btn.getBoundingClientRect();
+  const el=document.createElement('div');el.className='pudin-float';el.textContent='🍮';
+  el.style.left=(rect.left+rect.width/2-10)+'px';el.style.top=(rect.top-20)+'px';
+  document.body.appendChild(el);setTimeout(()=>el.remove(),800);
+}
+
+// ── Comments ──
+function toggleComments(id,btn){document.getElementById('comments-'+id).classList.toggle('open');}
+
+async function sendComment(postId){
+  const input=document.getElementById('cinput-'+postId);
+  const text=input.value.trim();if(!text)return;
+  if(!currentUser){showToast('Faça login para comentar!');return;}
+  const {data,error}=await sb.from('comments').insert({post_id:postId,user_id:currentUser.id,username:currentUser.username,content:text,avatar_color:currentUser.avatar_color||'#D4821A'}).select().single();
+  if(error){showToast('Erro ao comentar.');return;}
+  const post=posts.find(p=>p.id===postId);
+  if(post){if(!post.comments)post.comments=[];post.comments.push(data);}
+  input.value='';
+  const list=document.getElementById('clist-'+postId);
+  list.insertAdjacentHTML('beforeend',commentHTML(data));
+  // update count
+  const btn=document.querySelector(`#post-card-${postId} .comment-toggle`);
+  const c=post?.comments?.length||0;
+  if(btn)btn.textContent='💬 '+c;
+  showToast('Comentário enviado! 🍮');
+}
+
+// ── Delete ──
+let pendingDeleteFn=null;
+function confirmDeletePost(postId){
+  document.querySelectorAll('.post-dropdown-menu').forEach(m=>m.classList.remove('open'));
+  showConfirm('Deletar esta arte permanentemente?',async()=>{
+    await sb.from('posts').delete().eq('id',postId);
+    posts=posts.filter(p=>p.id!==postId);
+    document.getElementById('post-card-'+postId)?.remove();
+    showToast('Arte deletada.');
+    renderFeed();
+  });
+}
+
+function confirmDeleteComment(commentId,postId){
+  showConfirm('Deletar este comentário?',async()=>{
+    await sb.from('comments').delete().eq('id',commentId);
+    const post=posts.find(p=>p.id===postId);
+    if(post)post.comments=post.comments.filter(c=>c.id!==commentId);
+    document.getElementById('comment-'+commentId)?.remove();
+    // update count
+    const btn=document.querySelector(`#post-card-${postId} .comment-toggle`);
+    const c=post?.comments?.length||0;
+    if(btn)btn.textContent='💬 '+c;
+    showToast('Comentário deletado.');
+  });
+}
+
+function showConfirm(text,onYes){
+  document.getElementById('confirmText').textContent=text;
+  document.getElementById('confirmModal').classList.add('open');
+  pendingDeleteFn=onYes;
+  document.getElementById('confirmYesBtn').onclick=()=>{closeConfirm();onYes();};
+}
+function closeConfirm(){document.getElementById('confirmModal').classList.remove('open');pendingDeleteFn=null;}
+
+function switchFeedTab(tab,el){
+  currentFeedTab=tab;
+  document.querySelectorAll('.feed-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderFeed();
+}
+
+// ═══════════════════════════════════════════════
+// EDITOR
+// ═══════════════════════════════════════════════
+function startEditor(size){
+  canvasSize=size;
+  pixelMatrix=Array(size).fill(null).map(()=>Array(size).fill(null));
+  history=[];
+  document.getElementById('sizePicker').style.display='none';
+  document.getElementById('editorArea').style.display='';
+  const canvas=document.getElementById('pixelCanvas');
+  // Remove listeners antigos clonando o elemento
+  const newCanvas=canvas.cloneNode(false);
+  canvas.parentNode.replaceChild(newCanvas,canvas);
+  const cvs=document.getElementById('pixelCanvas');
+  const avail=Math.min(window.innerWidth-(window.innerWidth>768?var_sidebarW()+48:32),520);
+  const cellSize=Math.floor(avail/size);
+  cvs.width=size;cvs.height=size;
+  cvs.style.width=(cellSize*size)+'px';cvs.style.height=(cellSize*size)+'px';
+  editCtx=cvs.getContext('2d');
+  editCtx.imageSmoothingEnabled=false;
+  renderEditCanvas();
+  buildColorPalette();
+  bindCanvasEvents(cvs,size);
+}
+
+function var_sidebarW(){return window.innerWidth>768?240:0;}
+
+function renderEditCanvas(){
+  if(!editCtx)return;
+  const s=canvasSize;
+  editCtx.fillStyle='#F5EDD8';editCtx.fillRect(0,0,s,s);
+  for(let y=0;y<s;y++)for(let x=0;x<s;x++){if(pixelMatrix[y][x]){editCtx.fillStyle=pixelMatrix[y][x];editCtx.fillRect(x,y,1,1);}}
+  // grid
+  editCtx.strokeStyle='rgba(107,63,26,0.10)';editCtx.lineWidth=0.06;
+  for(let i=0;i<=s;i++){editCtx.beginPath();editCtx.moveTo(i,0);editCtx.lineTo(i,s);editCtx.stroke();editCtx.beginPath();editCtx.moveTo(0,i);editCtx.lineTo(s,i);editCtx.stroke();}
+}
+
+function bindCanvasEvents(canvas,size){
+  function getPixel(clientX,clientY){
+    const rect=canvas.getBoundingClientRect();
+    // Usa divisão pelo tamanho CSS real — correto para qualquer DPR e zoom
+    const x=Math.floor(((clientX-rect.left)/rect.width)*size);
+    const y=Math.floor(((clientY-rect.top)/rect.height)*size);
+    // Clamp defensivo
+    if(x<0||x>=size||y<0||y>=size)return null;
+    return{x,y};
+  }
+  function applyTool(px,saveHist){
+    if(!px)return;
+    if(lastPixel&&lastPixel.x===px.x&&lastPixel.y===px.y)return;
+    lastPixel=px;
+    if(saveHist)saveHistory();
+    if(activeTool==='pencil'){pixelMatrix[px.y][px.x]=currentColor;}
+    else if(activeTool==='eraser'){pixelMatrix[px.y][px.x]=null;}
+    else if(activeTool==='fill'){floodFill(px.x,px.y,pixelMatrix[px.y][px.x],currentColor);}
+    renderEditCanvas();
+  }
+  canvas.addEventListener('mousedown',e=>{isDrawing=true;lastPixel=null;applyTool(getPixel(e.clientX,e.clientY),true);});
+  canvas.addEventListener('mousemove',e=>{if(isDrawing)applyTool(getPixel(e.clientX,e.clientY),false);});
+  canvas.addEventListener('mouseup',()=>{isDrawing=false;lastPixel=null;});
+  canvas.addEventListener('mouseleave',()=>{isDrawing=false;lastPixel=null;});
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();isDrawing=true;lastPixel=null;applyTool(getPixel(e.touches[0].clientX,e.touches[0].clientY),true);},{passive:false});
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();if(isDrawing)applyTool(getPixel(e.touches[0].clientX,e.touches[0].clientY),false);},{passive:false});
+  canvas.addEventListener('touchend',()=>{isDrawing=false;lastPixel=null;});
+}
+
+function floodFill(x,y,targetColor,fillColor){
+  if(targetColor===fillColor)return;
+  const visited=new Set();
+  const stack=[[x,y]];
+  while(stack.length){
+    const[cx,cy]=stack.pop();
+    if(cx<0||cx>=canvasSize||cy<0||cy>=canvasSize)continue;
+    const key=cy*canvasSize+cx;
+    if(visited.has(key))continue;
+    if(pixelMatrix[cy][cx]!==targetColor)continue;
+    visited.add(key);
+    pixelMatrix[cy][cx]=fillColor;
+    stack.push([cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]);
+  }
+}
+
+function setTool(tool){
+  activeTool=tool;
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tool'+tool.charAt(0).toUpperCase()+tool.slice(1))?.classList.add('active');
+}
+
+function saveHistory(){
+  if(history.length>40)history.shift();
+  history.push(pixelMatrix.map(r=>[...r]));
+}
+
+function undoAction(){
+  if(!history.length){showToast('Nada para desfazer!');return;}
+  pixelMatrix=history.pop();renderEditCanvas();
+}
+
+function clearCanvas(){
+  saveHistory();
+  pixelMatrix=Array(canvasSize).fill(null).map(()=>Array(canvasSize).fill(null));
+  renderEditCanvas();
+}
+
+function buildColorPalette(){
+  const pal=document.getElementById('colorPalette');pal.innerHTML='';
+  COLORS.forEach(c=>{
+    const btn=document.createElement('button');
+    btn.className='color-swatch'+(c===currentColor?' active':'');
+    btn.style.background=c;
+    btn.onclick=()=>{currentColor=c;document.getElementById('colorPicker').value=c;document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('active'));btn.classList.add('active');setTool('pencil');};
+    pal.appendChild(btn);
+  });
+  document.getElementById('colorPicker').addEventListener('input',e=>{currentColor=e.target.value;document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('active'));setTool('pencil');});
+}
+
+// ── Publish ──
+function openPublishModal(){
+  const hasArt=pixelMatrix.some(r=>r.some(p=>p!==null));
+  if(!hasArt){showToast('Desenhe algo primeiro! 🎨');return;}
+  const prev=document.getElementById('publishPreview');
+  prev.width=canvasSize;prev.height=canvasSize;
+  const pctx=prev.getContext('2d');pctx.imageSmoothingEnabled=false;
+  renderPixelsToCanvas(pctx,pixelMatrix,canvasSize);
+  document.getElementById('publishModal').classList.add('open');
+}
+function closePublishModal(){document.getElementById('publishModal').classList.remove('open');}
+
+async function publishArt(){
+  if(!currentUser){showToast('Faça login primeiro!');return;}
+  const desc=document.getElementById('publishDesc').value.trim();
+  showToast('Publicando... 🍮');
+  const {data,error}=await sb.from('posts').insert({
+    user_id:currentUser.id,
+    username:currentUser.username,
+    avatar_color:currentUser.avatar_color||'#D4821A',
+    pixels:JSON.stringify(pixelMatrix),
+    canvas_size:canvasSize,
+    description:desc,
+  }).select('*, comments(*), pudins(*)').single();
+  if(error){showToast('Erro ao publicar: '+error.message);return;}
+  posts.unshift(data);
+  closePublishModal();
+  document.getElementById('publishDesc').value='';
+  switchAppView('feed');
+  renderFeed();
+  showToast('Arte publicada! 🍮✨');
+}
+
+function renderPixelsToCanvas(ctx,pixels,size){
+  ctx.imageSmoothingEnabled=false;
+  ctx.fillStyle='#F5EDD8';ctx.fillRect(0,0,size,size);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){if(pixels[y]&&pixels[y][x]){ctx.fillStyle=pixels[y][x];ctx.fillRect(x,y,1,1);}}
+}
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// Fecha dropdowns ao clicar fora
+document.addEventListener('click',e=>{
+  document.querySelectorAll('.post-dropdown-menu.open').forEach(m=>{
+    if(!m.closest('.post-dropdown').contains(e.target))m.classList.remove('open');
+  });
+  const um=document.getElementById('userMenu');
+  const chip=document.querySelector('.profile-chip');
+  if(um&&!um.contains(e.target)&&chip&&!chip.contains(e.target))um.classList.remove('open');
+});
+
+// ═══════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════
+async function boot(){
+  initVisuals();
+  // Verifica sessão existente
+  const{data:{session}}=await sb.auth.getSession();
+  document.getElementById('loadingOverlay').classList.add('hidden');
+  if(session){
+    await afterAuth(session);
+  }
+  // Listener de mudança de auth
+  sb.auth.onAuthStateChange((_event,session)=>{
+    if(!session&&currentUser){doLogout();}
+  });
+}
+
+window.addEventListener('DOMContentLoaded',boot);
+</script>
+</body>
+</html>
