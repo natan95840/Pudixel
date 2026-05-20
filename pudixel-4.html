@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pudixel — Crie e compartilhe pixel arts</title>
+<link rel="icon" type="image/png" href="Pudim.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --caramel: #D4821A;
+  --caramel-light: #E8A03A;
+  --cream: #FFF8EE;
+  --cream-dark: #F5EDD8;
+  --brown: #6B3F1A;
+  --brown-soft: #8B5A2B;
+  --pastel-pink: #F5C3A0;
+  --pastel-yellow: #FDE9B0;
+  --pastel-green: #B8E6C4;
+  --pastel-blue: #B0D4F5;
+  --text-dark: #2E1A0E;
+  --text-mid: #6B4226;
+  --danger: #C0392B;
+  --shadow: 0 4px 20px rgba(107,63,26,0.10);
+  --shadow-hover: 0 8px 32px rgba(107,63,26,0.18);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --sidebar-w: 260px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--text-dark);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.pixel { font-family: 'Press Start 2P', monospace; }
+
+/* ── SCREENS ── */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: block; }
+
+/* ── BUTTONS ── */
+.btn { padding: 8px 18px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; transition: all 0.18s ease; }
+.btn-outline { background: transparent; border: 2px solid var(--caramel); color: var(--caramel); }
+.btn-outline:hover { background: var(--caramel); color: #fff; }
+.btn-primary { background: var(--caramel); color: #fff; }
+.btn-primary:hover { background: var(--brown); transform: translateY(-1px); box-shadow: var(--shadow-hover); }
+
+/* ── HOME ── */
+#home { background: var(--cream); }
+
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,248,238,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 2px solid var(--cream-dark);
+  padding: 14px 28px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo-wrap { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.logo-img { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; }
+.logo-name { font-family: 'Press Start 2P', monospace; font-size: 13px; color: var(--caramel); line-height: 1.4; }
+.logo-name span { display: block; font-size: 8px; color: var(--brown-soft); margin-top: 2px; }
+header nav { display: flex; gap: 12px; align-items: center; }
+header nav .btn { font-size: 15px; padding: 10px 22px; }
+
+.hero { padding: 72px 32px 48px; text-align: center; position: relative; overflow: hidden; }
+.hero::before { content: ''; position: absolute; top: -40px; left: 50%; transform: translateX(-50%); width: 700px; height: 700px; background: radial-gradient(ellipse, rgba(212,130,26,0.10) 0%, transparent 70%); pointer-events: none; }
+.hero-pudim { width: 120px; height: 120px; margin: 0 auto 36px; image-rendering: pixelated; }
+.hero-pudim img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; display: block; }
+.hero h1 { font-family: 'Press Start 2P', monospace; font-size: clamp(14px,3.5vw,26px); color: var(--brown); line-height: 1.8; margin-bottom: 20px; }
+.hero h1 span { color: var(--caramel); }
+.hero p { font-size: 18px; color: var(--text-mid); max-width: 460px; margin: 0 auto 40px; line-height: 1.7; }
+.btn-hero { font-family: 'Press Start 2P', monospace; font-size: 12px; padding: 18px 34px; background: var(--caramel); color: #fff; border: none; border-radius: var(--radius); cursor: pointer; box-shadow: 0 6px 0 var(--brown); transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 12px; }
+.btn-hero:hover { transform: translateY(-3px); box-shadow: 0 9px 0 var(--brown); }
+.btn-hero:active { transform: translateY(2px); box-shadow: 0 4px 0 var(--brown); }
+
+.steps { padding: 56px 32px; }
+.steps h2 { font-family: 'Press Start 2P', monospace; font-size: 12px; color: var(--caramel); text-align: center; margin-bottom: 40px; line-height: 1.8; }
+.step-list { display: flex; flex-direction: column; gap: 20px; max-width: 480px; margin: 0 auto; }
+.step-item { display: flex; align-items: flex-start; gap: 20px; background: #fff; border-radius: var(--radius); padding: 22px 24px; box-shadow: var(--shadow); border: 1.5px solid var(--cream-dark); transition: transform 0.2s,box-shadow 0.2s; }
+.step-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.step-icon { font-size: 24px; color: var(--caramel); flex-shrink: 0; width: 54px; height: 54px; background: var(--pastel-yellow); border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+.step-text h3 { font-size: 16px; font-weight: 600; color: var(--brown); margin-bottom: 6px; }
+.step-text p { font-size: 14px; color: var(--text-mid); line-height: 1.5; }
+
+footer { padding: 28px; text-align: center; border-top: 2px solid var(--cream-dark); color: var(--text-mid); }
+footer .pixel { font-size: 9px; color: var(--caramel); margin-bottom: 10px; display: block; }
+footer p { font-size: 13px; }
+footer a { color: var(--caramel); text-decoration: none; }
+
+/* ── AUTH ── */
+#auth { background: var(--cream); display: none; }
+#auth.active { display: flex; flex-direction: column; min-height: 100vh; }
+.auth-inner { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.auth-box { background: #fff; border-radius: var(--radius); padding: 40px 32px; box-shadow: var(--shadow-hover); width: 100%; max-width: 400px; border: 1.5px solid var(--cream-dark); }
+.auth-logo { text-align: center; margin-bottom: 32px; }
+.auth-logo img { width: 56px; height: 56px; object-fit: contain; image-rendering: pixelated; display: block; margin: 0 auto 10px; }
+.auth-logo .pixel { font-size: 14px; color: var(--caramel); display: block; margin-bottom: 6px; }
+.auth-logo p { font-size: 14px; color: var(--text-mid); }
+.auth-tabs { display: flex; border: 2px solid var(--cream-dark); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 28px; }
+.auth-tab { flex: 1; padding: 12px; background: none; border: none; font-family: 'DM Sans',sans-serif; font-size: 15px; cursor: pointer; color: var(--text-mid); transition: all 0.15s; }
+.auth-tab.active { background: var(--caramel); color: #fff; }
+.form-group { margin-bottom: 18px; }
+.form-group label { display: block; font-size: 13px; color: var(--brown-soft); margin-bottom: 6px; font-weight: 500; }
+.form-group input { width: 100%; padding: 14px 16px; border: 2px solid var(--cream-dark); border-radius: var(--radius-sm); font-size: 16px; font-family: 'DM Sans',sans-serif; background: var(--cream); color: var(--text-dark); outline: none; transition: border 0.15s; }
+.form-group input:focus { border-color: var(--caramel); }
+.auth-submit { width: 100%; padding: 16px; background: var(--caramel); color: #fff; border: none; border-radius: var(--radius-sm); font-family: 'Press Start 2P',monospace; font-size: 11px; cursor: pointer; box-shadow: 0 4px 0 var(--brown); transition: all 0.15s; }
+.auth-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--brown); }
+.auth-submit:active { transform: translateY(1px); box-shadow: 0 3px 0 var(--brown); }
+.pixel-decoration { display: flex; justify-content: center; gap: 6px; margin-top: 24px; }
+.pixel-dot { width: 8px; height: 8px; border-radius: 2px; animation: blink 1.2s ease-in-out infinite; }
+.pixel-dot:nth-child(2) { animation-delay: 0.4s; }
+.pixel-dot:nth-child(3) { animation-delay: 0.8s; }
+@keyframes blink { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+/* ── APP LAYOUT ── */
+.app-layout { display: flex; min-height: 100vh; }
+
+/* SIDEBAR */
+.sidebar {
+  width: var(--sidebar-w);
+  background: #fff;
+  border-right: 2px solid var(--cream-dark);
+  display: flex; flex-direction: column;
+  padding: 24px 18px;
+  gap: 8px;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 90;
+  overflow-y: auto;
+}
+.sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 8px 0 24px; cursor: pointer; }
+.sidebar-logo img { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; }
+.sidebar-logo span { font-family: 'Press Start 2P',monospace; font-size: 11px; color: var(--caramel); }
+.sidebar-user {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--cream); border-radius: 14px; padding: 12px 14px;
+  margin-bottom: 10px; cursor: pointer; transition: background 0.15s;
+}
+.sidebar-user:hover { background: var(--pastel-yellow); }
+.sidebar-avatar { width: 44px; height: 44px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: var(--caramel); display: flex; align-items: center; justify-content: center; }
+.sidebar-avatar svg { width: 36px; height: 36px; }
+.sidebar-user-name { font-size: 14px; font-weight: 600; color: var(--brown); }
+.sidebar-user-bio { font-size: 12px; color: var(--text-mid); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+.sidebar-nav-btn {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 16px; border-radius: 14px;
+  background: none; border: none; cursor: pointer;
+  font-family: 'DM Sans',sans-serif; font-size: 15px; font-weight: 500;
+  color: var(--text-mid); width: 100%; text-align: left;
+  transition: all 0.15s;
+}
+.sidebar-nav-btn:hover { background: var(--cream-dark); color: var(--brown); }
+.sidebar-nav-btn.active { background: var(--pastel-yellow); color: var(--brown); }
+.sidebar-nav-btn i { font-size: 17px; width: 22px; text-align: center; }
+.sidebar-draw-btn {
+  margin-top: auto; padding: 15px;
+  background: var(--caramel); color: #fff;
+  border: none; border-radius: 16px; cursor: pointer;
+  font-family: 'Press Start 2P',monospace; font-size: 10px;
+  box-shadow: 0 4px 0 var(--brown); transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.sidebar-draw-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--brown); }
+.sidebar-logout { margin-top: 10px; padding: 12px 16px; background: none; border: 2px solid var(--cream-dark); border-radius: 14px; cursor: pointer; font-size: 14px; color: var(--text-mid); transition: all 0.15s; display: flex; align-items: center; gap: 10px; }
+.sidebar-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+/* MAIN AREA */
+.main-area { flex: 1; margin-left: var(--sidebar-w); min-height: 100vh; }
+
+/* MOBILE HEADER */
+.mobile-header {
+  display: none;
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,248,238,0.94);
+  backdrop-filter: blur(12px);
+  border-bottom: 2px solid var(--cream-dark);
+  padding: 12px 16px;
+  align-items: center; justify-content: space-between;
+}
+.mobile-header .logo-name { font-size: 10px; }
+.profile-chip { display: flex; align-items: center; gap: 8px; background: var(--cream-dark); border-radius: 20px; padding: 5px 10px 5px 5px; cursor: pointer; transition: background 0.15s; }
+.profile-chip:hover { background: var(--pastel-yellow); }
+.profile-chip-avatar { width: 28px; height: 28px; border-radius: 7px; background: var(--caramel); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.profile-chip-avatar svg { width: 22px; height: 22px; }
+.profile-chip span { font-size: 13px; font-weight: 500; color: var(--brown); }
+
+/* FEED */
+.feed-tabs-bar { padding: 20px 20px 10px; display: flex; gap: 10px; max-width: 760px; }
+.feed-tab { padding: 9px 20px; border-radius: 20px; border: 2px solid transparent; background: none; font-family: 'DM Sans',sans-serif; font-size: 14px; cursor: pointer; color: var(--text-mid); transition: all 0.15s; }
+.feed-tab.active { background: var(--caramel); color: #fff; border-color: var(--caramel); }
+.feed-content { padding: 10px 20px 80px; max-width: 760px; }
+
+@media (min-width: 900px) {
+  .feed-content { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  .feed-content .empty-state { grid-column: 1/-1; }
+}
+
+/* POST CARD */
+.post-card { background: #fff; border-radius: var(--radius); margin-bottom: 24px; box-shadow: var(--shadow); border: 1.5px solid var(--cream-dark); overflow: hidden; transition: transform 0.2s,box-shadow 0.2s; }
+@media (min-width:900px) { .post-card { margin-bottom: 0; } }
+.post-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.post-header { padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; }
+.post-author { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.post-author:hover .post-username { text-decoration: underline; }
+.post-avatar { width: 38px; height: 38px; border-radius: 10px; background: var(--pastel-yellow); overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.post-avatar svg { width: 30px; height: 30px; }
+.post-username { font-size: 15px; font-weight: 600; color: var(--brown); }
+.post-date { font-size: 12px; color: var(--text-mid); margin-top: 1px; }
+.post-menu-btn { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text-mid); padding: 4px 10px; border-radius: 8px; transition: background 0.12s; line-height: 1; }
+.post-menu-btn:hover { background: var(--cream-dark); }
+.post-canvas-wrap { background: var(--cream-dark); display: flex; align-items: center; justify-content: center; padding: 10px; min-height: 80px; }
+.post-canvas-wrap canvas { image-rendering: pixelated; max-width: 100%; display: block; border-radius: 8px; }
+.post-footer { padding: 14px 18px; }
+.post-desc { font-size: 14px; color: var(--text-dark); margin-bottom: 12px; line-height: 1.5; }
+.post-actions { display: flex; align-items: center; gap: 12px; }
+.pudin-btn { display: flex; align-items: center; gap: 7px; padding: 9px 18px; background: var(--pastel-yellow); border: 2px solid transparent; border-radius: 20px; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--brown); transition: all 0.15s; }
+.pudin-btn:hover { background: var(--caramel-light); color: #fff; border-color: var(--caramel); }
+.pudin-btn.liked { background: var(--caramel); color: #fff; }
+.pudin-btn img { width: 20px; height: 20px; object-fit: contain; image-rendering: pixelated; }
+.comment-toggle { background: none; border: none; font-size: 14px; color: var(--text-mid); cursor: pointer; padding: 9px 12px; border-radius: 8px; transition: background 0.15s; display: flex; align-items: center; gap: 6px; }
+.comment-toggle:hover { background: var(--cream-dark); }
+
+/* COMMENTS */
+.comments-section { padding: 0 18px 18px; display: none; }
+.comments-section.open { display: block; }
+.comment-input-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
+.comment-input { flex: 1; padding: 11px 16px; border: 2px solid var(--cream-dark); border-radius: 20px; font-size: 14px; font-family: 'DM Sans',sans-serif; background: var(--cream); outline: none; transition: border 0.15s; color: var(--text-dark); }
+.comment-input:focus { border-color: var(--caramel); }
+.comment-send { padding: 11px 18px; background: var(--caramel); color: #fff; border: none; border-radius: 20px; font-size: 14px; cursor: pointer; transition: background 0.15s; }
+.comment-send:hover { background: var(--brown); }
+.comment-item { padding: 9px 0; border-top: 1px solid var(--cream-dark); display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.comment-item-body strong { font-size: 13px; color: var(--brown); }
+.comment-item-body p { font-size: 13px; color: var(--text-dark); margin-top: 2px; line-height: 1.4; }
+.comment-del-btn { background: none; border: none; cursor: pointer; font-size: 14px; color: var(--text-mid); padding: 2px 6px; border-radius: 6px; flex-shrink: 0; transition: all 0.12s; }
+.comment-del-btn:hover { background: #fce4e4; color: var(--danger); }
+
+/* FAB — mobile only */
+.fab { position: fixed; bottom: 24px; right: 24px; width: 64px; height: 64px; background: var(--caramel); border-radius: 18px; border: none; cursor: pointer; font-size: 22px; box-shadow: 0 6px 0 var(--brown),var(--shadow-hover); transition: all 0.15s; z-index: 200; display: none; align-items: center; justify-content: center; color: #fff; }
+.fab:hover { transform: translateY(-3px); box-shadow: 0 9px 0 var(--brown),var(--shadow-hover); }
+.fab:active { transform: translateY(2px); box-shadow: 0 4px 0 var(--brown); }
+.fab.visible { display: flex; }
+
+/* ── EDITOR ── */
+.editor-wrap { max-width: 680px; margin: 0 auto; padding-bottom: 40px; }
+.editor-header-bar { padding: 16px 24px; background: rgba(255,248,238,0.94); backdrop-filter: blur(12px); border-bottom: 2px solid var(--cream-dark); display: flex; align-items: center; gap: 18px; }
+.editor-header-bar h2 { font-family: 'Press Start 2P',monospace; font-size: 10px; color: var(--caramel); flex: 1; line-height: 1.6; }
+.btn-back { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--brown-soft); padding: 4px 8px; border-radius: 8px; transition: background 0.15s; }
+.btn-back:hover { background: var(--cream-dark); }
+
+.size-picker { padding: 40px 28px; text-align: center; }
+.size-picker h3 { font-family: 'Press Start 2P',monospace; font-size: 11px; color: var(--brown); margin-bottom: 28px; line-height: 1.8; }
+.size-options { display: flex; flex-direction: column; gap: 14px; max-width: 380px; margin: 0 auto; }
+.size-opt { padding: 22px 28px; border: 2.5px solid var(--cream-dark); border-radius: var(--radius); background: #fff; cursor: pointer; text-align: left; transition: all 0.15s; display: flex; align-items: center; justify-content: space-between; }
+.size-opt:hover { border-color: var(--caramel); transform: translateX(4px); }
+.size-opt .size-label { font-family: 'Press Start 2P',monospace; font-size: 11px; color: var(--brown); }
+.size-opt .size-hint { font-size: 13px; color: var(--text-mid); margin-top: 4px; }
+
+.canvas-wrap { padding: 20px; display: flex; align-items: flex-start; justify-content: center; overflow: auto; }
+#pixelCanvas { image-rendering: pixelated; cursor: crosshair; border-radius: 8px; box-shadow: var(--shadow-hover); touch-action: none; display: block; }
+
+.tools-bar { padding: 14px 18px; background: #fff; border-top: 2px solid var(--cream-dark); border-bottom: 2px solid var(--cream-dark); display: flex; align-items: center; gap: 12px; overflow-x: auto; scrollbar-width: none; }
+.tools-bar::-webkit-scrollbar { display: none; }
+.tool-btn { width: 48px; height: 48px; border-radius: 12px; border: 2.5px solid var(--cream-dark); background: var(--cream); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.12s; color: var(--brown-soft); }
+.tool-btn:hover { border-color: var(--caramel); }
+.tool-btn.active { background: var(--caramel); border-color: var(--caramel); color: #fff; }
+
+.color-palette { display: flex; gap: 10px; flex-wrap: wrap; padding: 14px 18px; }
+.color-swatch { width: 36px; height: 36px; border-radius: 10px; cursor: pointer; border: 3px solid transparent; transition: all 0.12s; flex-shrink: 0; }
+.color-swatch.active { border-color: var(--brown); transform: scale(1.15); }
+.color-swatch:hover { transform: scale(1.1); }
+.color-picker-wrap { display: flex; align-items: center; gap: 10px; padding: 0 18px 14px; }
+.color-picker-wrap label { font-size: 13px; color: var(--text-mid); }
+#colorPicker { width: 48px; height: 36px; border: none; border-radius: 8px; cursor: pointer; padding: 2px; }
+
+.publish-bar { padding: 18px; display: flex; gap: 12px; align-items: center; }
+.btn-clear { padding: 14px 20px; background: none; border: 2px solid var(--cream-dark); border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; color: var(--text-mid); transition: all 0.15s; }
+.btn-clear:hover { border-color: var(--caramel); color: var(--caramel); }
+.btn-publish { flex: 1; padding: 16px; background: var(--caramel); color: #fff; border: none; border-radius: var(--radius-sm); font-family: 'Press Start 2P',monospace; font-size: 10px; cursor: pointer; box-shadow: 0 4px 0 var(--brown); transition: all 0.15s; }
+.btn-publish:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--brown); }
+
+/* ── MODALS ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(107,63,26,0.35); backdrop-filter: blur(4px); z-index: 300; display: none; align-items: flex-end; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal-sheet { background: #fff; border-radius: 24px 24px 0 0; padding: 30px 26px 44px; width: 100%; max-width: 560px; animation: slideUp 0.25s ease; }
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal-handle { width: 40px; height: 4px; background: var(--cream-dark); border-radius: 2px; margin: 0 auto 26px; }
+.modal-sheet h3 { font-family: 'Press Start 2P',monospace; font-size: 11px; color: var(--brown); margin-bottom: 22px; line-height: 1.8; }
+.publish-preview { display: flex; justify-content: center; margin-bottom: 22px; }
+.publish-preview canvas { image-rendering: pixelated; border-radius: 12px; box-shadow: var(--shadow); width: 128px; height: 128px; }
+.publish-desc { width: 100%; padding: 14px 16px; border: 2px solid var(--cream-dark); border-radius: var(--radius-sm); font-size: 15px; font-family: 'DM Sans',sans-serif; background: var(--cream); outline: none; transition: border 0.15s; resize: none; margin-bottom: 18px; color: var(--text-dark); }
+.publish-desc:focus { border-color: var(--caramel); }
+.modal-actions { display: flex; gap: 12px; }
+.btn-cancel { padding: 14px 22px; background: none; border: 2px solid var(--cream-dark); border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; color: var(--text-mid); transition: all 0.15s; }
+.btn-cancel:hover { border-color: var(--caramel); }
+.btn-confirm-publish { flex: 1; padding: 14px; background: var(--caramel); color: #fff; border: none; border-radius: var(--radius-sm); font-family: 'Press Start 2P',monospace; font-size: 10px; cursor: pointer; box-shadow: 0 4px 0 var(--brown); transition: all 0.15s; }
+.btn-confirm-publish:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--brown); }
+
+/* CONFIRM MODAL */
+.confirm-modal { position: fixed; inset: 0; background: rgba(107,63,26,0.35); backdrop-filter: blur(4px); z-index: 500; display: none; align-items: center; justify-content: center; padding: 24px; }
+.confirm-modal.open { display: flex; }
+.confirm-box { background: #fff; border-radius: var(--radius); padding: 30px 26px; max-width: 340px; width: 100%; box-shadow: var(--shadow-hover); text-align: center; }
+.confirm-box p { font-size: 16px; color: var(--text-dark); margin-bottom: 22px; line-height: 1.5; }
+.confirm-box .confirm-btns { display: flex; gap: 12px; }
+.confirm-box .confirm-btns button { flex: 1; padding: 14px; border-radius: var(--radius-sm); font-size: 15px; cursor: pointer; transition: all 0.15s; font-weight: 500; }
+.confirm-no { background: none; border: 2px solid var(--cream-dark); color: var(--text-mid); }
+.confirm-no:hover { border-color: var(--caramel); }
+.confirm-yes { background: var(--danger); border: none; color: #fff; }
+.confirm-yes:hover { background: #922b21; }
+
+/* PROFILE MODAL */
+.profile-modal-body { display: flex; flex-direction: column; gap: 18px; }
+.profile-avatar-row { display: flex; align-items: center; gap: 18px; }
+.profile-big-avatar { width: 72px; height: 72px; border-radius: 16px; overflow: hidden; background: var(--caramel); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.profile-big-avatar svg { width: 58px; height: 58px; }
+.profile-avatar-colors { display: flex; gap: 8px; flex-wrap: wrap; }
+.profile-avatar-color-btn { width: 30px; height: 30px; border-radius: 8px; border: 3px solid transparent; cursor: pointer; transition: all 0.12s; }
+.profile-avatar-color-btn.active { border-color: var(--brown); transform: scale(1.15); }
+.profile-field-label { font-size: 13px; color: var(--brown-soft); font-weight: 500; margin-bottom: 8px; display: block; }
+.profile-bio-input { width: 100%; padding: 14px 16px; border: 2px solid var(--cream-dark); border-radius: var(--radius-sm); font-size: 15px; font-family: 'DM Sans',sans-serif; background: var(--cream); color: var(--text-dark); outline: none; transition: border 0.15s; resize: none; }
+.profile-bio-input:focus { border-color: var(--caramel); }
+.btn-save-profile { width: 100%; padding: 16px; background: var(--caramel); color: #fff; border: none; border-radius: var(--radius-sm); font-family: 'Press Start 2P',monospace; font-size: 10px; cursor: pointer; box-shadow: 0 4px 0 var(--brown); transition: all 0.15s; }
+.btn-save-profile:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--brown); }
+
+/* USER PROFILE PAGE */
+.profile-page { padding: 32px 24px; max-width: 760px; }
+.profile-page-header { display: flex; align-items: center; gap: 24px; background: #fff; border-radius: var(--radius); padding: 28px 24px; box-shadow: var(--shadow); border: 1.5px solid var(--cream-dark); margin-bottom: 28px; }
+.profile-page-avatar { width: 80px; height: 80px; border-radius: 18px; background: var(--caramel); overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.profile-page-avatar svg { width: 64px; height: 64px; }
+.profile-page-info h2 { font-size: 22px; font-weight: 700; color: var(--brown); }
+.profile-page-info p { font-size: 14px; color: var(--text-mid); margin-top: 6px; }
+.profile-page-stats { display: flex; gap: 24px; margin-top: 12px; }
+.profile-page-stats span { font-size: 14px; color: var(--text-mid); }
+.profile-page-stats strong { color: var(--brown); }
+.profile-page-arts { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+.profile-art-thumb { background: var(--cream-dark); border-radius: 12px; overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+.profile-art-thumb:hover { border-color: var(--caramel); transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.profile-art-thumb canvas { image-rendering: pixelated; max-width: 100%; max-height: 100%; }
+
+/* POST DROPDOWN MENU */
+.post-dropdown { position: relative; }
+.post-dropdown-menu { position: absolute; top: calc(100% + 4px); right: 0; background: #fff; border-radius: 12px; box-shadow: var(--shadow-hover); border: 1.5px solid var(--cream-dark); min-width: 150px; z-index: 50; overflow: hidden; display: none; }
+.post-dropdown-menu.open { display: block; }
+.post-dropdown-menu button { display: block; width: 100%; padding: 12px 18px; background: none; border: none; font-size: 14px; cursor: pointer; text-align: left; color: var(--text-dark); transition: background 0.12s; display: flex; align-items: center; gap: 8px; }
+.post-dropdown-menu button:hover { background: var(--cream-dark); }
+.post-dropdown-menu button.danger { color: var(--danger); }
+
+/* TOAST */
+.toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--brown); color: #fff; padding: 13px 26px; border-radius: 20px; font-size: 14px; font-weight: 500; opacity: 0; pointer-events: none; transition: all 0.3s ease; z-index: 600; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.pudin-float { position: fixed; pointer-events: none; animation: floatUp 0.8s ease forwards; z-index: 700; width: 28px; height: 28px; }
+.pudin-float img { width: 100%; height: 100%; object-fit: contain; }
+@keyframes floatUp { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(-60px) scale(1.4); } }
+
+.empty-state { text-align: center; padding: 56px 28px; color: var(--text-mid); }
+.empty-state .pixel { font-size: 10px; color: var(--caramel); margin-bottom: 14px; display: block; }
+.empty-state p { font-size: 15px; }
+
+/* LOADING */
+.loading-overlay { position: fixed; inset: 0; background: var(--cream); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
+.loading-overlay.hidden { display: none; }
+.loading-overlay .pixel { font-size: 13px; color: var(--caramel); }
+.loading-dots { display: flex; gap: 8px; }
+.loading-dot { width: 10px; height: 10px; background: var(--caramel); border-radius: 2px; animation: blink 0.9s ease-in-out infinite; }
+.loading-dot:nth-child(2) { animation-delay: 0.3s; }
+.loading-dot:nth-child(3) { animation-delay: 0.6s; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main-area { margin-left: 0; }
+  .mobile-header { display: flex; }
+  .fab.visible { display: flex; }
+  .feed-tabs-bar { padding-top: 14px; }
+}
+@media (min-width: 769px) {
+  .mobile-header { display: none !important; }
+  .fab { display: none !important; }
+}
+
+/* User menu (mobile dropdown) */
+.user-menu { position: absolute; top: 58px; right: 16px; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-hover); border: 1.5px solid var(--cream-dark); z-index: 200; min-width: 170px; overflow: hidden; display: none; }
+.user-menu.open { display: block; }
+.user-menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 14px 18px; text-align: left; background: none; border: none; font-size: 14px; cursor: pointer; color: var(--text-dark); transition: background 0.12s; }
+.user-menu button:hover { background: var(--cream-dark); }
+.user-menu button.danger { color: var(--danger); }
+
+/* Mobile eyedropper */
+.mobile-eyedropper-btn { display: none; }
+@media (max-width: 768px) {
+  .mobile-eyedropper-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 48px; height: 48px;
+    border-radius: 12px; border: 2.5px solid var(--cream-dark);
+    background: var(--cream); cursor: pointer; transition: all 0.12s;
+    color: var(--brown-soft); font-size: 18px;
+  }
+  .mobile-eyedropper-btn:hover { border-color: var(--caramel); }
+  .mobile-eyedropper-btn.active { background: var(--caramel); border-color: var(--caramel); color: #fff; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <span class="pixel">Pudixel</span>
+  <div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>
+</div>
+
+<!-- ═══════════════ HOME ═══════════════ -->
+<div id="home" class="screen">
+  <header>
+    <div class="logo-wrap" onclick="showScreen('home')">
+      <img class="logo-img" src="Like.png" alt="Pudixel logo" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+      <canvas id="logoCanvas" width="16" height="16" style="display:none;width:40px;height:40px;background:var(--caramel);border-radius:8px;image-rendering:pixelated"></canvas>
+      <div class="logo-name">Pudixel<span>pixel art social</span></div>
+    </div>
+    <nav>
+      <button class="btn btn-outline" onclick="showScreen('auth');setTab('login')">Entrar</button>
+      <button class="btn btn-primary" onclick="showScreen('auth');setTab('register')">Criar conta</button>
+    </nav>
+  </header>
+  <main>
+    <section class="hero">
+      <div class="hero-pudim">
+        <img src="Pudim.png" alt="Pudim" onerror="this.style.display='none';this.parentElement.querySelector('canvas').style.display='block'">
+        <canvas id="heroPudim" width="32" height="32" style="display:none;width:100%;height:100%;image-rendering:pixelated"></canvas>
+      </div>
+      <h1>Crie e compartilhe<br><span>pixel arts</span><br>direto do navegador.</h1>
+      <p>Um cantinho da internet feito só para isso. Sem distrações. Só arte.</p>
+      <button class="btn-hero" onclick="showScreen('auth');setTab('register')">
+        <i class="fa-solid fa-paintbrush"></i> Começar agora
+      </button>
+    </section>
+    <section class="steps">
+      <h2>Como funciona?</h2>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-icon"><i class="fa-solid fa-pen-nib"></i></div>
+          <div class="step-text"><h3>Desenhe online</h3><p>Editor de pixel art simples, funciona no celular também.</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon"><i class="fa-solid fa-share-from-square"></i></div>
+          <div class="step-text"><h3>Publique instantaneamente</h3><p>Compartilhe sua arte com a comunidade em segundos.</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon"><i class="fa-solid fa-heart"></i></div>
+          <div class="step-text"><h3>Receba pudins</h3><p>A comunidade curte artes com pudins. Simples assim.</p></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <span class="pixel">Pudixel</span>
+    <p>© 2025 Pudixel · <a href="#">Termos</a> · <a href="#">Privacidade</a></p>
+  </footer>
+</div>
+
+<!-- ═══════════════ AUTH ═══════════════ -->
+<div id="auth" class="screen">
+  <header>
+    <div class="logo-wrap" onclick="showScreen('home')">
+      <img class="logo-img" src="Like.png" alt="Pudixel logo" onerror="this.style.display='none'">
+      <div class="logo-name">Pudixel</div>
+    </div>
+    <nav><button class="btn btn-outline" onclick="showScreen('home')"><i class="fa-solid fa-arrow-left"></i> Voltar</button></nav>
+  </header>
+  <div class="auth-inner">
+    <div class="auth-box">
+      <div class="auth-logo">
+        <img src="Pudim.png" alt="Pudim" style="width:56px;height:56px;object-fit:contain;image-rendering:pixelated;display:block;margin:0 auto 10px;" onerror="this.style.display='none'">
+        <span class="pixel">Pudixel</span>
+        <p>Bem-vindo de volta <i class="fa-solid fa-heart" style="color:var(--caramel)"></i></p>
+      </div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="loginTab" onclick="setTab('login')">Entrar</button>
+        <button class="auth-tab" id="registerTab" onclick="setTab('register')">Criar conta</button>
+      </div>
+      <div id="loginForm">
+        <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="seu@email.com"></div>
+        <div class="form-group"><label>Senha</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+        <button class="auth-submit" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Entrar</button>
+      </div>
+      <div id="registerForm" style="display:none">
+        <div class="form-group"><label>Nome de usuário</label><input type="text" id="regUser" placeholder="seuNome"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="regEmail" placeholder="seu@email.com"></div>
+        <div class="form-group"><label>Senha</label><input type="password" id="regPass" placeholder="••••••••"></div>
+        <button class="auth-submit" onclick="doRegister()"><i class="fa-solid fa-user-plus"></i> Criar conta</button>
+      </div>
+      <div class="pixel-decoration">
+        <div class="pixel-dot" style="background:var(--caramel)"></div>
+        <div class="pixel-dot" style="background:var(--pastel-pink)"></div>
+        <div class="pixel-dot" style="background:var(--pastel-green)"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ APP ═══════════════ -->
+<div id="appShell" class="screen">
+  <div class="app-layout">
+
+    <!-- SIDEBAR DESKTOP -->
+    <aside class="sidebar">
+      <div class="sidebar-logo" onclick="switchAppView('feed')">
+        <img src="Like.png" alt="Pudixel" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <canvas id="sidebarLogo" width="16" height="16" style="display:none;width:40px;height:40px;image-rendering:pixelated;background:var(--caramel);border-radius:8px"></canvas>
+        <span>Pudixel</span>
+      </div>
+      <div class="sidebar-user" onclick="openProfileModal()" id="sidebarUser">
+        <div class="sidebar-avatar" id="sidebarAvatarWrap"></div>
+        <div style="overflow:hidden">
+          <div class="sidebar-user-name" id="sidebarUsername">@user</div>
+          <div class="sidebar-user-bio" id="sidebarBio">Sem bio ainda</div>
+        </div>
+      </div>
+      <button class="sidebar-nav-btn active" id="sidebarBtnFeed" onclick="switchAppView('feed');setSidebarActive(this)">
+        <i class="fa-solid fa-compass"></i> Explorar
+      </button>
+      <button class="sidebar-nav-btn" id="sidebarBtnMine" onclick="switchAppView('mine');setSidebarActive(this)">
+        <i class="fa-solid fa-palette"></i> Minhas artes
+      </button>
+      <button class="sidebar-nav-btn" onclick="openProfileModal()">
+        <i class="fa-solid fa-circle-user"></i> Meu perfil
+      </button>
+      <button class="sidebar-draw-btn" onclick="switchAppView('editor')">
+        <i class="fa-solid fa-paintbrush"></i> Desenhar
+      </button>
+      <button class="sidebar-logout" onclick="doLogout()">
+        <i class="fa-solid fa-right-from-bracket"></i> Sair
+      </button>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main-area">
+
+      <!-- MOBILE HEADER -->
+      <div class="mobile-header" id="mobileHeader">
+        <div class="logo-wrap" onclick="switchAppView('feed')">
+          <img class="logo-img" src="Like.png" alt="Pudixel" style="width:32px;height:32px;" onerror="this.style.display='none'">
+          <div class="logo-name">Pudixel</div>
+        </div>
+        <div style="position:relative">
+          <div class="profile-chip" onclick="toggleUserMenu()">
+            <div class="profile-chip-avatar" id="chipAvatarWrap"></div>
+            <span id="chipName">@user</span>
+          </div>
+          <div class="user-menu" id="userMenu">
+            <button onclick="openProfileModal();toggleUserMenu()"><i class="fa-solid fa-circle-user"></i> Meu perfil</button>
+            <button onclick="switchAppView('editor');toggleUserMenu()"><i class="fa-solid fa-paintbrush"></i> Desenhar</button>
+            <button onclick="doLogout()" class="danger"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FEED VIEW -->
+      <div id="feedView">
+        <div class="feed-tabs-bar">
+          <button class="feed-tab active" id="tabAll" onclick="switchFeedTab('all',this)">Todas</button>
+          <button class="feed-tab" id="tabMine" onclick="switchFeedTab('mine',this)">Minhas</button>
+        </div>
+        <div class="feed-content" id="feedContent"></div>
+      </div>
+
+      <!-- PROFILE PAGE VIEW -->
+      <div id="profilePageView" style="display:none">
+        <div class="profile-page" id="profilePageContent"></div>
+      </div>
+
+      <!-- EDITOR VIEW -->
+      <div id="editorView" style="display:none">
+        <div class="editor-wrap">
+          <div class="editor-header-bar">
+            <button class="btn-back" onclick="switchAppView('feed')"><i class="fa-solid fa-arrow-left"></i></button>
+            <h2>Editor de Pixel Art</h2>
+          </div>
+          <div id="sizePicker" class="size-picker">
+            <h3>Escolha o<br>tamanho do canvas</h3>
+            <div class="size-options">
+              <button class="size-opt" onclick="startEditor(16)">
+                <div><div class="size-label">16 × 16</div><div class="size-hint">Ícones e sprites simples</div></div>
+                <i class="fa-solid fa-egg" style="font-size:24px;color:var(--caramel)"></i>
+              </button>
+              <button class="size-opt" onclick="startEditor(32)">
+                <div><div class="size-label">32 × 32</div><div class="size-hint">Personagens e objetos</div></div>
+                <i class="fa-solid fa-heart" style="font-size:24px;color:var(--caramel)"></i>
+              </button>
+              <button class="size-opt" onclick="startEditor(64)">
+                <div><div class="size-label">64 × 64</div><div class="size-hint">Cenas e ilustrações</div></div>
+                <i class="fa-solid fa-city" style="font-size:24px;color:var(--caramel)"></i>
+              </button>
+            </div>
+          </div>
+          <div id="editorArea" style="display:none">
+            <div class="canvas-wrap"><canvas id="pixelCanvas"></canvas></div>
+            <div class="tools-bar">
+              <button class="tool-btn active" id="toolPencil" onclick="setTool('pencil')" title="Lápis"><i class="fa-solid fa-pencil"></i></button>
+              <button class="tool-btn" id="toolEraser" onclick="setTool('eraser')" title="Borracha"><i class="fa-solid fa-eraser"></i></button>
+              <button class="tool-btn" id="toolFill" onclick="setTool('fill')" title="Balde de tinta"><i class="fa-solid fa-fill-drip"></i></button>
+              <button class="tool-btn mobile-eyedropper-btn" id="toolEyedropperMobile" onclick="activateMobileEyedropper()" title="Conta-gotas"><i class="fa-solid fa-eye-dropper"></i></button>
+              <div style="width:2px;height:36px;background:var(--cream-dark);border-radius:1px;flex-shrink:0"></div>
+              <button class="tool-btn" onclick="undoAction()" title="Desfazer"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+            <div class="color-palette" id="colorPalette"></div>
+            <div class="color-picker-wrap">
+              <label><i class="fa-solid fa-eye-dropper"></i> Cor personalizada:</label>
+              <input type="color" id="colorPicker" value="#D4821A">
+            </div>
+            <div class="publish-bar">
+              <button class="btn-clear" onclick="clearCanvas()"><i class="fa-solid fa-trash"></i> Limpar</button>
+              <button class="btn-publish" onclick="openPublishModal()"><i class="fa-solid fa-paper-plane"></i> Publicar arte</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /main-area -->
+  </div><!-- /app-layout -->
+  <button class="fab visible" onclick="switchAppView('editor')"><i class="fa-solid fa-paintbrush"></i></button>
+</div>
+
+<!-- ── PUBLISH MODAL ── -->
+<div class="modal-overlay" id="publishModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h3>Publicar arte</h3>
+    <div class="publish-preview"><canvas id="publishPreview"></canvas></div>
+    <textarea class="publish-desc" id="publishDesc" rows="3" placeholder="Descreva sua arte... (opcional)"></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closePublishModal()">Cancelar</button>
+      <button class="btn-confirm-publish" onclick="publishArt()"><i class="fa-solid fa-paper-plane"></i> Publicar!</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PROFILE MODAL ── -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h3>Meu perfil</h3>
+    <div class="profile-modal-body">
+      <div class="profile-avatar-row">
+        <div class="profile-big-avatar" id="profileBigAvatarWrap"></div>
+        <div>
+          <span class="profile-field-label">Cor do avatar</span>
+          <div class="profile-avatar-colors" id="avatarColorPicker"></div>
+        </div>
+      </div>
+      <div>
+        <span class="profile-field-label">Biografia (máx. 80 caracteres)</span>
+        <textarea class="profile-bio-input" id="profileBioInput" rows="2" maxlength="80" placeholder="Conte algo sobre você..."></textarea>
+      </div>
+      <button class="btn-save-profile" onclick="saveProfile()"><i class="fa-solid fa-floppy-disk"></i> Salvar perfil</button>
+      <button class="btn-cancel" style="width:100%;margin-top:4px" onclick="closeProfileModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONFIRM MODAL ── -->
+<div class="confirm-modal" id="confirmModal">
+  <div class="confirm-box">
+    <p id="confirmText">Tem certeza?</p>
+    <div class="confirm-btns">
+      <button class="confirm-no" onclick="closeConfirm()">Cancelar</button>
+      <button class="confirm-yes" id="confirmYesBtn">Deletar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// SUPABASE
+// ═══════════════════════════════════════════════
+const SUPA_URL = 'https://briyrsxowqqdxmxelhdj.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyaXlyc3hvd3FxZHhteGVsaGRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjAwODcsImV4cCI6MjA5NDY5NjA4N30.5lk8gMWrRa2rDnd9n6su9njy99BqQ2dUv30prdseisk';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let currentUser    = null;
+let currentSession = null;
+let posts          = [];
+let currentFeedTab = 'all';
+let activeTool     = 'pencil';
+let currentColor   = '#D4821A';
+let canvasSize     = 16;
+let pixelMatrix    = [];
+let history        = [];
+let isDrawing      = false;
+let lastPixel      = null;
+let editCtx        = null;
+let profileAvatarColor = '#D4821A';
+let mobileEyedropperActive = false;
+
+const COLORS = [
+  '#D4821A','#8B5A2B','#FDE9B0','#F5C3A0',
+  '#6B3F1A','#FFF8EE','#B8E6C4','#B0D4F5',
+  '#F5A623','#E8746A','#7EC8A4','#6AB0D4',
+  '#2E1A0E','#F9F4EA','#D4B8A0','#A0C4D4',
+  '#FFFFFF','#000000',
+];
+const AVATAR_COLORS = ['#D4821A','#E8746A','#7EC8A4','#6AB0D4','#9B59B6','#F5A623','#2E1A0E','#5DADE2'];
+
+// ═══════════════════════════════════════════════
+// DEFAULT AVATAR SVG (user silhouette)
+// ═══════════════════════════════════════════════
+function defaultAvatarSVG(color, size) {
+  const bg = color || '#D4821A';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="${size}" height="${size}">
+    <rect width="40" height="40" fill="${bg}" rx="0"/>
+    <circle cx="20" cy="15" r="8" fill="rgba(255,255,255,0.85)"/>
+    <ellipse cx="20" cy="34" rx="13" ry="10" fill="rgba(255,255,255,0.85)"/>
+  </svg>`;
+}
+
+function setAvatarEl(container, username, color) {
+  if (!container) return;
+  const size = container.offsetWidth || 40;
+  container.innerHTML = defaultAvatarSVG(color || '#D4821A', size);
+}
+
+// ═══════════════════════════════════════════════
+// PIXEL ART HELPERS (fallback)
+// ═══════════════════════════════════════════════
+function drawPudim(ctx,w,h){
+  ctx.imageSmoothingEnabled=false;
+  const s=w/16;
+  const px=(x,y,c)=>{ctx.fillStyle=c;ctx.fillRect(x*s,y*s,s,s);};
+  [[4,3],[5,3],[6,3],[7,3],[8,3],[9,3],[10,3],[3,4],[4,4],[5,4],[6,4],[7,4],[8,4],[9,4],[10,4],[11,4],[3,5],[4,5],[5,5],[6,5],[7,5],[8,5],[9,5],[10,5],[11,5],[3,6],[4,6],[5,6],[6,6],[7,6],[8,6],[9,6],[10,6],[11,6],[3,7],[4,7],[5,7],[6,7],[7,7],[8,7],[9,7],[10,7],[11,7],[3,8],[4,8],[5,8],[6,8],[7,8],[8,8],[9,8],[10,8],[11,8]].forEach(([x,y])=>px(x,y,'#D4821A'));
+  [[4,9],[5,9],[6,9],[7,9],[8,9],[9,9],[10,9],[3,10],[4,10],[5,10],[6,10],[7,10],[8,10],[9,10],[10,10],[11,10],[3,11],[4,11],[5,11],[6,11],[7,11],[8,11],[9,11],[10,11],[11,11]].forEach(([x,y])=>px(x,y,'#FFF8EE'));
+  [[2,12],[3,12],[4,12],[5,12],[6,12],[7,12],[8,12],[9,12],[10,12],[11,12],[12,12],[2,13],[3,13],[4,13],[5,13],[6,13],[7,13],[8,13],[9,13],[10,13],[11,13],[12,13]].forEach(([x,y])=>px(x,y,'#FDE9B0'));
+  [[5,1],[6,1],[7,1],[8,1],[9,1],[4,2],[5,2],[6,2],[7,2],[8,2],[9,2],[10,2]].forEach(([x,y])=>px(x,y,'#E8A03A'));
+  px(6,6,'#6B3F1A');px(9,6,'#6B3F1A');px(6,8,'#6B3F1A');px(9,8,'#6B3F1A');px(7,9,'#6B3F1A');px(8,9,'#6B3F1A');
+}
+
+function drawLogoIcon(ctx,w,h){
+  ctx.imageSmoothingEnabled=false;
+  ctx.fillStyle='#D4821A';ctx.fillRect(0,0,w,h);
+  const s=w/8;
+  [[1,1,'#FDE9B0'],[2,1,'#FDE9B0'],[3,1,'#FDE9B0'],[4,1,'#FDE9B0'],[5,1,'#FDE9B0'],[1,2,'#D4821A'],[2,2,'#D4821A'],[3,2,'#D4821A'],[4,2,'#D4821A'],[5,2,'#D4821A'],[1,3,'#FFF8EE'],[2,3,'#FFF8EE'],[3,3,'#FFF8EE'],[4,3,'#FFF8EE'],[5,3,'#FFF8EE'],[0,4,'#FDE9B0'],[1,4,'#FDE9B0'],[2,4,'#FDE9B0'],[3,4,'#FDE9B0'],[4,4,'#FDE9B0'],[5,4,'#FDE9B0'],[6,4,'#FDE9B0'],[2,2,'#6B3F1A'],[4,2,'#6B3F1A']].forEach(([x,y,c])=>{ctx.fillStyle=c;ctx.fillRect(x*s,y*s,s,s);});
+}
+
+function drawMiniArt(ctx,seed,size){
+  ctx.imageSmoothingEnabled=false;
+  const rng=mulberry32(seed);
+  const pals=[['#D4821A','#FDE9B0','#6B3F1A','#FFF8EE'],['#B0D4F5','#6AB0D4','#2E4A6B','#FFF8EE'],['#B8E6C4','#7EC8A4','#1A5A36','#FFF8EE'],['#F5C3A0','#E8746A','#6B1A1A','#FFF8EE'],['#D4B8A0','#A07850','#4A2810','#FFF8EE']];
+  const pal=pals[seed%pals.length];
+  ctx.fillStyle=pal[3];ctx.fillRect(0,0,size,size);
+  for(let y=0;y<size;y++){for(let x=0;x<size;x++){const v=rng();if(v<0.15){ctx.fillStyle=pal[0];ctx.fillRect(x,y,1,1);}else if(v<0.25){ctx.fillStyle=pal[1];ctx.fillRect(x,y,1,1);}else if(v<0.3){ctx.fillStyle=pal[2];ctx.fillRect(x,y,1,1);}}}
+}
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+// ═══════════════════════════════════════════════
+// INIT VISUALS
+// ═══════════════════════════════════════════════
+function initVisuals(){
+  // Fallback canvas logos
+  ['logoCanvas','sidebarLogo'].forEach(id=>{
+    const c=document.getElementById(id);
+    if(c && c.style.display!=='none') drawLogoIcon(c.getContext('2d'),16,16);
+  });
+  const heroPudimCanvas=document.getElementById('heroPudim');
+  if(heroPudimCanvas && heroPudimCanvas.style.display!=='none') drawPudim(heroPudimCanvas.getContext('2d'),32,32);
+}
+
+function updateUIForUser(){
+  if(!currentUser) return;
+  const color = currentUser.avatar_color || '#D4821A';
+  const bio   = currentUser.bio || 'Sem bio ainda';
+  const name  = '@' + currentUser.username;
+  document.getElementById('sidebarUsername').textContent = name;
+  document.getElementById('sidebarBio').textContent = bio;
+  document.getElementById('chipName').textContent = name;
+
+  setAvatarEl(document.getElementById('sidebarAvatarWrap'), currentUser.username, color);
+  setAvatarEl(document.getElementById('chipAvatarWrap'), currentUser.username, color);
+}
+
+// ═══════════════════════════════════════════════
+// SCREEN NAV
+// ═══════════════════════════════════════════════
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  if(name==='home'){
+    document.getElementById('home').classList.add('active');
+  } else if(name==='auth'){
+    document.getElementById('auth').classList.add('active');
+  } else {
+    document.getElementById('appShell').classList.add('active');
+  }
+  document.getElementById('userMenu')?.classList.remove('open');
+}
+
+function switchAppView(view){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('appShell').classList.add('active');
+
+  const feedView        = document.getElementById('feedView');
+  const editorView      = document.getElementById('editorView');
+  const profilePageView = document.getElementById('profilePageView');
+
+  feedView.style.display='none';
+  editorView.style.display='none';
+  profilePageView.style.display='none';
+
+  if(view==='editor'){
+    editorView.style.display='';
+    document.getElementById('sizePicker').style.display='';
+    document.getElementById('editorArea').style.display='none';
+  } else if(view==='profile'){
+    profilePageView.style.display='';
+  } else {
+    feedView.style.display='';
+    if(view==='mine'){
+      switchFeedTab('mine', document.getElementById('tabMine'));
+    } else {
+      switchFeedTab('all', document.getElementById('tabAll'));
+    }
+  }
+  document.getElementById('userMenu')?.classList.remove('open');
+}
+
+function setSidebarActive(btn){
+  document.querySelectorAll('.sidebar-nav-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════
+// AUTH — sem verificação de email
+// ═══════════════════════════════════════════════
+function setTab(tab){
+  const lt=document.getElementById('loginTab'),rt=document.getElementById('registerTab');
+  const lf=document.getElementById('loginForm'),rf=document.getElementById('registerForm');
+  if(tab==='login'){lt.classList.add('active');rt.classList.remove('active');lf.style.display='';rf.style.display='none';}
+  else{rt.classList.add('active');lt.classList.remove('active');rf.style.display='';lf.style.display='none';}
+}
+
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  if(!email||!pass){showToast('Preencha todos os campos');return;}
+  showToast('Entrando...');
+  let data, error;
+  try {
+    ({data,error}=await sb.auth.signInWithPassword({email,password:pass}));
+  } catch(e) {
+    showToast('Erro de conexão. Verifique sua internet.');
+    return;
+  }
+  if(error){showToast('Email ou senha incorretos!');return;}
+  await afterAuth(data.session);
+}
+
+async function doRegister(){
+  const username=document.getElementById('regUser').value.trim().replace('@','');
+  const email=document.getElementById('regEmail').value.trim();
+  const pass=document.getElementById('regPass').value;
+  if(!username||!email||!pass){showToast('Preencha todos os campos');return;}
+  if(pass.length<6){showToast('Senha mínima: 6 caracteres.');return;}
+  if(!/^[a-zA-Z0-9_]+$/.test(username)){showToast('Usuário: apenas letras, números e _');return;}
+  showToast('Criando conta...');
+
+  // Desabilita confirmação de email usando signUp sem options de emailRedirectTo
+  // e depois faz login direto para garantir sessão imediata
+  let data, error;
+  try {
+    ({data,error}=await sb.auth.signUp({
+      email,
+      password: pass,
+      options: {
+        data: { username },
+        emailRedirectTo: undefined
+      }
+    }));
+  } catch(e) {
+    showToast('Erro de conexão. Verifique sua internet.');
+    return;
+  }
+
+  if(error){showToast('Erro: '+error.message);return;}
+
+  // Cria perfil imediatamente
+  if(data.user){
+    try {
+      await sb.from('profiles').upsert({
+        id: data.user.id,
+        username,
+        bio: '',
+        avatar_color: '#D4821A'
+      });
+    } catch(e){ console.warn('Erro ao criar perfil:',e); }
+  }
+
+  // Se Supabase retornou sessão diretamente (email confirm desativado no projeto)
+  if(data.session){
+    await afterAuth(data.session);
+    return;
+  }
+
+  // Se email confirm está ativo no Supabase mas não queremos esperar:
+  // faz login automático logo após o cadastro
+  showToast('Conta criada! Entrando...');
+  let loginData, loginError;
+  try {
+    ({data: loginData, error: loginError} = await sb.auth.signInWithPassword({email, password: pass}));
+  } catch(e) {
+    showToast('Conta criada! Faça login para entrar.');
+    setTab('login');
+    document.getElementById('loginEmail').value = email;
+    return;
+  }
+
+  if(loginError){
+    // Email confirm ainda ativo — avisa ao usuário de forma simples
+    showToast('Conta criada! Faça login para entrar.');
+    setTab('login');
+    document.getElementById('loginEmail').value = email;
+    return;
+  }
+
+  await afterAuth(loginData.session);
+}
+
+async function afterAuth(session){
+  if(!session) return;
+  currentSession = session;
+  const userId = session.user.id;
+  const {data:profile} = await sb.from('profiles').select('*').eq('id',userId).single();
+  currentUser = {
+    id: userId,
+    username: profile?.username || session.user.user_metadata?.username || session.user.email.split('@')[0],
+    bio: profile?.bio || '',
+    avatar_color: profile?.avatar_color || '#D4821A',
+  };
+  if(!profile){
+    await sb.from('profiles').upsert({
+      id: userId,
+      username: currentUser.username,
+      bio: '',
+      avatar_color: '#D4821A'
+    });
+  }
+  updateUIForUser();
+  await loadPosts();
+  switchAppView('feed');
+  showToast(`Bem-vindo, @${currentUser.username}!`);
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  currentUser=null;currentSession=null;posts=[];
+  showScreen('home');
+  showToast('Até a próxima!');
+}
+
+function toggleUserMenu(){
+  document.getElementById('userMenu').classList.toggle('open');
+}
+
+// ═══════════════════════════════════════════════
+// PROFILE MODAL
+// ═══════════════════════════════════════════════
+function openProfileModal(){
+  if(!currentUser) return;
+  document.getElementById('profileBioInput').value = currentUser.bio || '';
+  profileAvatarColor = currentUser.avatar_color || '#D4821A';
+  buildAvatarColorPicker();
+  refreshProfilePreview();
+  document.getElementById('profileModal').classList.add('open');
+}
+function closeProfileModal(){ document.getElementById('profileModal').classList.remove('open'); }
+
+function buildAvatarColorPicker(){
+  const wrap=document.getElementById('avatarColorPicker'); wrap.innerHTML='';
+  AVATAR_COLORS.forEach(c=>{
+    const btn=document.createElement('button');
+    btn.className='profile-avatar-color-btn'+(c===profileAvatarColor?' active':'');
+    btn.style.background=c;
+    btn.onclick=()=>{
+      profileAvatarColor=c;
+      document.querySelectorAll('.profile-avatar-color-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      refreshProfilePreview();
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+function refreshProfilePreview(){
+  const wrap = document.getElementById('profileBigAvatarWrap');
+  if(wrap) {
+    wrap.innerHTML = defaultAvatarSVG(profileAvatarColor, 72);
+  }
+}
+
+async function saveProfile(){
+  const bio=document.getElementById('profileBioInput').value.trim();
+  const {error}=await sb.from('profiles').update({bio,avatar_color:profileAvatarColor}).eq('id',currentUser.id);
+  if(error){showToast('Erro ao salvar perfil: '+error.message);return;}
+  currentUser.bio=bio;
+  currentUser.avatar_color=profileAvatarColor;
+  updateUIForUser();
+  closeProfileModal();
+  showToast('Perfil salvo!');
+  renderFeed();
+}
+
+// ═══════════════════════════════════════════════
+// USER PROFILE PAGE
+// ═══════════════════════════════════════════════
+async function openUserProfile(username, userId, avatarColor) {
+  const container = document.getElementById('profilePageContent');
+  container.innerHTML = '<div class="empty-state"><p>Carregando...</p></div>';
+  switchAppView('profile');
+
+  // Busca posts do usuário
+  const {data: userPosts} = await sb.from('posts')
+    .select('*, pudins(*)')
+    .eq('user_id', userId)
+    .order('created_at', {ascending: false});
+
+  const totalLikes = (userPosts || []).reduce((sum, p) => sum + (p.pudins?.length || 0), 0);
+  const isOwnProfile = currentUser?.id === userId;
+
+  container.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;cursor:pointer" onclick="switchAppView('feed')">
+      <i class="fa-solid fa-arrow-left" style="color:var(--brown-soft);font-size:18px"></i>
+      <span style="font-size:14px;color:var(--text-mid)">Voltar</span>
+    </div>
+    <div class="profile-page-header">
+      <div class="profile-page-avatar">${defaultAvatarSVG(avatarColor||'#D4821A', 80)}</div>
+      <div class="profile-page-info">
+        <h2>@${escHtml(username)}</h2>
+        <div class="profile-page-stats">
+          <span><strong>${(userPosts||[]).length}</strong> artes</span>
+          <span><strong>${totalLikes}</strong> pudins</span>
+        </div>
+        ${isOwnProfile ? `<button class="btn btn-outline" style="margin-top:12px;font-size:13px;padding:8px 16px" onclick="openProfileModal()"><i class="fa-solid fa-pen"></i> Editar perfil</button>` : ''}
+      </div>
+    </div>
+    <div class="profile-page-arts" id="profileArtsGrid"></div>
+  `;
+
+  const grid = container.querySelector('#profileArtsGrid');
+  if(!userPosts || userPosts.length === 0) {
+    grid.innerHTML = '<p style="color:var(--text-mid);font-size:14px;grid-column:1/-1">Nenhuma arte publicada ainda.</p>';
+    return;
+  }
+
+  userPosts.forEach(post => {
+    const thumb = document.createElement('div');
+    thumb.className = 'profile-art-thumb';
+    const sz = post.canvas_size || 16;
+    const c = document.createElement('canvas');
+    c.width = sz; c.height = sz;
+    c.style.width = '100%'; c.style.height = '100%';
+    c.style.imageRendering = 'pixelated';
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    try { renderPixelsToCanvas(ctx, JSON.parse(post.pixels), sz); } catch(e){}
+    thumb.appendChild(c);
+    thumb.title = `${post.pudins?.length||0} pudins`;
+    grid.appendChild(thumb);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// POSTS — SUPABASE
+// ═══════════════════════════════════════════════
+async function loadPosts(){
+  const {data,error}=await sb.from('posts')
+    .select('*, comments(*), pudins(*)')
+    .order('created_at',{ascending:false});
+  if(error){showToast('Erro ao carregar posts.');return;}
+  posts=data||[];
+  renderFeed();
+}
+
+function renderFeed(){
+  const container=document.getElementById('feedContent');
+  if(!container) return;
+  const filtered=currentFeedTab==='mine'
+    ?posts.filter(p=>p.user_id===currentUser?.id)
+    :posts;
+  if(filtered.length===0){
+    container.innerHTML=`<div class="empty-state"><span class="pixel">Sem artes ainda</span><p>${currentFeedTab==='mine'?'Publique sua primeira arte!':'A comunidade ainda está quieta'}</p></div>`;
+    return;
+  }
+  container.innerHTML='';
+  filtered.forEach(post=>{container.appendChild(createPostCard(post));});
+}
+
+function createPostCard(post){
+  const card=document.createElement('div');
+  card.className='post-card';
+  card.id='post-card-'+post.id;
+  const date=new Date(post.created_at);
+  const dateStr=date.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+  const pudinsArr=post.pudins||[];
+  const liked=pudinsArr.some(p=>p.user_id===currentUser?.id);
+  const pudimCount=pudinsArr.length;
+  const commentsArr=post.comments||[];
+  const isOwner=post.user_id===currentUser?.id;
+
+  card.innerHTML=`
+    <div class="post-header">
+      <div class="post-author" onclick="openUserProfile('${escHtml(post.username)}','${post.user_id}','${post.avatar_color||'#D4821A'}')">
+        <div class="post-avatar" id="pa-${post.id}"></div>
+        <div>
+          <div class="post-username">@${escHtml(post.username)}</div>
+          <div class="post-date">${dateStr}</div>
+        </div>
+      </div>
+      ${isOwner?`<div class="post-dropdown">
+        <button class="post-menu-btn" onclick="togglePostMenu('${post.id}',this)"><i class="fa-solid fa-ellipsis"></i></button>
+        <div class="post-dropdown-menu" id="pdm-${post.id}">
+          <button class="danger" onclick="confirmDeletePost('${post.id}')"><i class="fa-solid fa-trash"></i> Deletar arte</button>
+        </div>
+      </div>`:''}
+    </div>
+    <div class="post-canvas-wrap"><canvas class="art-canvas" data-size="${post.canvas_size}"></canvas></div>
+    <div class="post-footer">
+      ${post.description?`<div class="post-desc">${escHtml(post.description)}</div>`:''}
+      <div class="post-actions">
+        <button class="pudin-btn ${liked?'liked':''}" id="pudin-btn-${post.id}" onclick="togglePudin('${post.id}',this)">
+          <img src="Like.png" alt="like" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<i class=\\'fa-solid fa-heart\\'></i>')">
+          <span class="count">${pudimCount}</span>
+        </button>
+        <button class="comment-toggle" onclick="toggleComments('${post.id}',this)">
+          <i class="fa-regular fa-comment"></i> <span>${commentsArr.length}</span>
+        </button>
+      </div>
+    </div>
+    <div class="comments-section" id="comments-${post.id}">
+      <div class="comment-input-wrap">
+        <input class="comment-input" placeholder="Comentar..." id="cinput-${post.id}">
+        <button class="comment-send" onclick="sendComment('${post.id}')"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+      <div id="clist-${post.id}">${commentsArr.map(c=>commentHTML(c)).join('')}</div>
+    </div>`;
+
+  // Avatar do post
+  const avatarDiv = card.querySelector('#pa-'+post.id);
+  avatarDiv.innerHTML = defaultAvatarSVG(post.avatar_color||'#D4821A', 38);
+
+  // Canvas da arte
+  const artCanvas=card.querySelector('.art-canvas');
+  const sz=post.canvas_size||16;
+  const dispSize=Math.min(sz*(sz<=16?14:sz<=32?8:4),340);
+  artCanvas.width=sz;artCanvas.height=sz;
+  artCanvas.style.width=dispSize+'px';artCanvas.style.height=dispSize+'px';
+  const octx=artCanvas.getContext('2d');
+  octx.imageSmoothingEnabled=false;
+  try{const px=JSON.parse(post.pixels);renderPixelsToCanvas(octx,px,sz);}catch(e){}
+
+  return card;
+}
+
+function commentHTML(c){
+  const isOwner=c.user_id===currentUser?.id;
+  return `<div class="comment-item" id="comment-${c.id}">
+    <div class="comment-item-body"><strong>@${escHtml(c.username)}</strong><p>${escHtml(c.content)}</p></div>
+    ${isOwner?`<button class="comment-del-btn" onclick="confirmDeleteComment('${c.id}','${c.post_id}')"><i class="fa-solid fa-xmark"></i></button>`:''}
+  </div>`;
+}
+
+function togglePostMenu(postId,btn){
+  const menu=document.getElementById('pdm-'+postId);
+  document.querySelectorAll('.post-dropdown-menu.open').forEach(m=>{if(m.id!=='pdm-'+postId)m.classList.remove('open');});
+  menu.classList.toggle('open');
+}
+
+// ── Pudins ──
+async function togglePudin(postId,btn){
+  if(!currentUser){showToast('Faça login para pudinar!');return;}
+  const post=posts.find(p=>p.id===postId);if(!post)return;
+  const existing=post.pudins.find(p=>p.user_id===currentUser.id);
+  if(existing){
+    const {error}=await sb.from('pudins').delete().eq('id',existing.id);
+    if(error){showToast('Erro ao remover pudin.');return;}
+    post.pudins=post.pudins.filter(p=>p.id!==existing.id);
+    btn.classList.remove('liked');
+  } else {
+    const {data,error}=await sb.from('pudins').insert({post_id:postId,user_id:currentUser.id}).select().single();
+    if(error){showToast('Erro ao pudinar.');return;}
+    if(data)post.pudins.push(data);
+    btn.classList.add('liked');
+    spawnPudinFloat(btn);
+  }
+  btn.querySelector('.count').textContent=post.pudins.length;
+}
+
+function spawnPudinFloat(btn){
+  const rect=btn.getBoundingClientRect();
+  const el=document.createElement('div');
+  el.className='pudin-float';
+  el.innerHTML='<img src="Like.png" alt="like" onerror="this.parentElement.textContent=\'♥\'">';
+  el.style.left=(rect.left+rect.width/2-14)+'px';
+  el.style.top=(rect.top+window.scrollY-20)+'px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),800);
+}
+
+// ── Comments ──
+function toggleComments(id){
+  document.getElementById('comments-'+id).classList.toggle('open');
+}
+
+async function sendComment(postId){
+  const input=document.getElementById('cinput-'+postId);
+  const text=input.value.trim();
+  if(!text) return;
+  if(!currentUser){showToast('Faça login para comentar!');return;}
+  const {data,error}=await sb.from('comments').insert({
+    post_id:postId,
+    user_id:currentUser.id,
+    username:currentUser.username,
+    content:text,
+    avatar_color:currentUser.avatar_color||'#D4821A'
+  }).select().single();
+  if(error){showToast('Erro ao comentar: '+error.message);return;}
+  const post=posts.find(p=>p.id===postId);
+  if(post){if(!post.comments)post.comments=[];post.comments.push(data);}
+  input.value='';
+  const list=document.getElementById('clist-'+postId);
+  if(list)list.insertAdjacentHTML('beforeend',commentHTML(data));
+  const toggleBtn=document.querySelector(`#post-card-${postId} .comment-toggle span`);
+  if(toggleBtn)toggleBtn.textContent=post?.comments?.length||0;
+  showToast('Comentário enviado!');
+}
+
+// ── Delete ──
+function confirmDeletePost(postId){
+  document.querySelectorAll('.post-dropdown-menu').forEach(m=>m.classList.remove('open'));
+  showConfirm('Deletar esta arte permanentemente?',async()=>{
+    const {error}=await sb.from('posts').delete().eq('id',postId);
+    if(error){showToast('Erro ao deletar.');return;}
+    posts=posts.filter(p=>p.id!==postId);
+    document.getElementById('post-card-'+postId)?.remove();
+    showToast('Arte deletada.');
+    renderFeed();
+  });
+}
+
+function confirmDeleteComment(commentId,postId){
+  showConfirm('Deletar este comentário?',async()=>{
+    const {error}=await sb.from('comments').delete().eq('id',commentId);
+    if(error){showToast('Erro ao deletar comentário.');return;}
+    const post=posts.find(p=>p.id===postId);
+    if(post)post.comments=post.comments.filter(c=>c.id!==commentId);
+    document.getElementById('comment-'+commentId)?.remove();
+    const toggleBtn=document.querySelector(`#post-card-${postId} .comment-toggle span`);
+    if(toggleBtn)toggleBtn.textContent=post?.comments?.length||0;
+    showToast('Comentário deletado.');
+  });
+}
+
+function showConfirm(text,onYes){
+  document.getElementById('confirmText').textContent=text;
+  document.getElementById('confirmModal').classList.add('open');
+  document.getElementById('confirmYesBtn').onclick=()=>{closeConfirm();onYes();};
+}
+function closeConfirm(){document.getElementById('confirmModal').classList.remove('open');}
+
+function switchFeedTab(tab,el){
+  currentFeedTab=tab;
+  document.querySelectorAll('.feed-tab').forEach(t=>t.classList.remove('active'));
+  if(el)el.classList.add('active');
+  renderFeed();
+}
+
+// ═══════════════════════════════════════════════
+// EDITOR
+// ═══════════════════════════════════════════════
+function startEditor(size){
+  canvasSize=size;
+  pixelMatrix=Array(size).fill(null).map(()=>Array(size).fill(null));
+  history=[];
+  activeTool='pencil';
+  document.getElementById('sizePicker').style.display='none';
+  document.getElementById('editorArea').style.display='';
+
+  const oldCanvas=document.getElementById('pixelCanvas');
+  const newCanvas=oldCanvas.cloneNode(false);
+  oldCanvas.parentNode.replaceChild(newCanvas,oldCanvas);
+
+  const cvs=document.getElementById('pixelCanvas');
+  const sidebarW=window.innerWidth>768?260:0;
+  const avail=Math.min(window.innerWidth-(sidebarW+48),600);
+  const cellSize=Math.floor(avail/size);
+  cvs.width=size;cvs.height=size;
+  cvs.style.width=(cellSize*size)+'px';
+  cvs.style.height=(cellSize*size)+'px';
+  editCtx=cvs.getContext('2d');
+  editCtx.imageSmoothingEnabled=false;
+
+  document.getElementById('colorPicker').value=currentColor;
+  renderEditCanvas();
+  buildColorPalette();
+  bindCanvasEvents(cvs,size);
+
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('toolPencil')?.classList.add('active');
+}
+
+function renderEditCanvas(){
+  if(!editCtx) return;
+  const s=canvasSize;
+  editCtx.fillStyle='#F5EDD8';editCtx.fillRect(0,0,s,s);
+  for(let y=0;y<s;y++)for(let x=0;x<s;x++){if(pixelMatrix[y][x]){editCtx.fillStyle=pixelMatrix[y][x];editCtx.fillRect(x,y,1,1);}}
+  editCtx.strokeStyle='rgba(107,63,26,0.10)';editCtx.lineWidth=0.06;
+  for(let i=0;i<=s;i++){
+    editCtx.beginPath();editCtx.moveTo(i,0);editCtx.lineTo(i,s);editCtx.stroke();
+    editCtx.beginPath();editCtx.moveTo(0,i);editCtx.lineTo(s,i);editCtx.stroke();
+  }
+}
+
+function bindCanvasEvents(canvas,size){
+  function getPixel(clientX,clientY){
+    const rect=canvas.getBoundingClientRect();
+    const x=Math.floor(((clientX-rect.left)/rect.width)*size);
+    const y=Math.floor(((clientY-rect.top)/rect.height)*size);
+    if(x<0||x>=size||y<0||y>=size)return null;
+    return{x,y};
+  }
+  function applyTool(px,saveHist){
+    if(!px)return;
+    if(lastPixel&&lastPixel.x===px.x&&lastPixel.y===px.y)return;
+    lastPixel=px;
+    if(saveHist)saveHistory();
+
+    // Conta-gotas mobile: pega cor do pixel clicado
+    if(mobileEyedropperActive){
+      const pickedColor = pixelMatrix[px.y][px.x] || '#F5EDD8';
+      currentColor = pickedColor;
+      document.getElementById('colorPicker').value = pickedColor;
+      document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('active'));
+      deactivateMobileEyedropper();
+      showToast('Cor capturada!');
+      return;
+    }
+
+    if(activeTool==='pencil'){pixelMatrix[px.y][px.x]=currentColor;}
+    else if(activeTool==='eraser'){pixelMatrix[px.y][px.x]=null;}
+    else if(activeTool==='fill'){floodFill(px.x,px.y,pixelMatrix[px.y][px.x],currentColor);}
+    renderEditCanvas();
+  }
+  canvas.addEventListener('mousedown',e=>{isDrawing=true;lastPixel=null;applyTool(getPixel(e.clientX,e.clientY),true);});
+  canvas.addEventListener('mousemove',e=>{if(isDrawing)applyTool(getPixel(e.clientX,e.clientY),false);});
+  canvas.addEventListener('mouseup',()=>{isDrawing=false;lastPixel=null;});
+  canvas.addEventListener('mouseleave',()=>{isDrawing=false;lastPixel=null;});
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();isDrawing=true;lastPixel=null;applyTool(getPixel(e.touches[0].clientX,e.touches[0].clientY),true);},{passive:false});
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();if(isDrawing)applyTool(getPixel(e.touches[0].clientX,e.touches[0].clientY),false);},{passive:false});
+  canvas.addEventListener('touchend',()=>{isDrawing=false;lastPixel=null;});
+}
+
+// ── Conta-gotas mobile ──
+function activateMobileEyedropper(){
+  mobileEyedropperActive = true;
+  document.getElementById('toolEyedropperMobile').classList.add('active');
+  showToast('Toque em um pixel para capturar a cor');
+}
+function deactivateMobileEyedropper(){
+  mobileEyedropperActive = false;
+  document.getElementById('toolEyedropperMobile')?.classList.remove('active');
+}
+
+function floodFill(x,y,targetColor,fillColor){
+  if(targetColor===fillColor)return;
+  const visited=new Set();
+  const stack=[[x,y]];
+  while(stack.length){
+    const[cx,cy]=stack.pop();
+    if(cx<0||cx>=canvasSize||cy<0||cy>=canvasSize)continue;
+    const key=cy*canvasSize+cx;
+    if(visited.has(key))continue;
+    if(pixelMatrix[cy][cx]!==targetColor)continue;
+    visited.add(key);
+    pixelMatrix[cy][cx]=fillColor;
+    stack.push([cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]);
+  }
+}
+
+function setTool(tool){
+  mobileEyedropperActive = false;
+  document.getElementById('toolEyedropperMobile')?.classList.remove('active');
+  activeTool=tool;
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tool'+tool.charAt(0).toUpperCase()+tool.slice(1))?.classList.add('active');
+}
+
+function saveHistory(){
+  if(history.length>40)history.shift();
+  history.push(pixelMatrix.map(r=>[...r]));
+}
+
+function undoAction(){
+  if(!history.length){showToast('Nada para desfazer!');return;}
+  pixelMatrix=history.pop();renderEditCanvas();
+}
+
+function clearCanvas(){
+  saveHistory();
+  pixelMatrix=Array(canvasSize).fill(null).map(()=>Array(canvasSize).fill(null));
+  renderEditCanvas();
+}
+
+function buildColorPalette(){
+  const pal=document.getElementById('colorPalette');pal.innerHTML='';
+  COLORS.forEach(c=>{
+    const btn=document.createElement('button');
+    btn.className='color-swatch'+(c===currentColor?' active':'');
+    btn.style.background=c;
+    btn.onclick=()=>{
+      currentColor=c;
+      document.getElementById('colorPicker').value=c;
+      document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('active'));
+      btn.classList.add('active');
+      setTool('pencil');
+    };
+    pal.appendChild(btn);
+  });
+  document.getElementById('colorPicker').value=currentColor;
+}
+
+// ── Publish ──
+function openPublishModal(){
+  const hasArt=pixelMatrix.some(r=>r.some(p=>p!==null));
+  if(!hasArt){showToast('Desenhe algo primeiro!');return;}
+  const prev=document.getElementById('publishPreview');
+  prev.width=canvasSize;prev.height=canvasSize;
+  const pctx=prev.getContext('2d');pctx.imageSmoothingEnabled=false;
+  renderPixelsToCanvas(pctx,pixelMatrix,canvasSize);
+  document.getElementById('publishModal').classList.add('open');
+}
+function closePublishModal(){document.getElementById('publishModal').classList.remove('open');}
+
+async function publishArt(){
+  if(!currentUser){showToast('Faça login primeiro!');return;}
+  const desc=document.getElementById('publishDesc').value.trim();
+  showToast('Publicando...');
+  const {data,error}=await sb.from('posts').insert({
+    user_id:currentUser.id,
+    username:currentUser.username,
+    avatar_color:currentUser.avatar_color||'#D4821A',
+    pixels:JSON.stringify(pixelMatrix),
+    canvas_size:canvasSize,
+    description:desc,
+  }).select('*, comments(*), pudins(*)').single();
+  if(error){showToast('Erro ao publicar: '+error.message);return;}
+  posts.unshift(data);
+  closePublishModal();
+  document.getElementById('publishDesc').value='';
+  switchAppView('feed');
+  renderFeed();
+  showToast('Arte publicada!');
+}
+
+function renderPixelsToCanvas(ctx,pixels,size){
+  ctx.imageSmoothingEnabled=false;
+  ctx.fillStyle='#F5EDD8';ctx.fillRect(0,0,size,size);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){if(pixels[y]&&pixels[y][x]){ctx.fillStyle=pixels[y][x];ctx.fillRect(x,y,1,1);}}
+}
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._timeout);
+  t._timeout=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+document.addEventListener('click',e=>{
+  document.querySelectorAll('.post-dropdown-menu.open').forEach(m=>{
+    if(!m.closest('.post-dropdown').contains(e.target))m.classList.remove('open');
+  });
+  const um=document.getElementById('userMenu');
+  const chip=document.querySelector('.profile-chip');
+  if(um&&!um.contains(e.target)&&chip&&!chip.contains(e.target))um.classList.remove('open');
+});
+
+// ═══════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════
+async function boot(){
+  initVisuals();
+
+  document.getElementById('colorPicker').addEventListener('input',e=>{
+    currentColor=e.target.value;
+    document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('active'));
+    setTool('pencil');
+  });
+
+  const overlay=document.getElementById('loadingOverlay');
+  let session=null;
+  try {
+    const {data,error}=await sb.auth.getSession();
+    if(!error)session=data?.session||null;
+  } catch(e){
+    console.error('Erro ao conectar com Supabase:',e);
+  } finally {
+    overlay.classList.add('hidden');
+  }
+
+  if(session){
+    try { await afterAuth(session); }
+    catch(e){ console.error('Erro ao restaurar sessão:',e); showScreen('home'); }
+  } else {
+    showScreen('home');
+  }
+
+  sb.auth.onAuthStateChange((_event,session)=>{
+    if(!session&&currentUser){
+      currentUser=null;currentSession=null;posts=[];
+      showScreen('home');
+      showToast('Sessão encerrada. Faça login novamente.');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded',boot);
+</script>
+</body>
+</html>
