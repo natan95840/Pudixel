@@ -2069,19 +2069,16 @@ footer {
 .user-menu button:hover { background: var(--cream); }
 .user-menu button.danger { color: var(--danger); }
 
-/* Mobile eyedropper */
-.mobile-eyedropper-btn { display: none; }
-@media (max-width: 768px) {
-  .mobile-eyedropper-btn {
-    display: flex; align-items: center; justify-content: center;
-    width: 46px; height: 46px;
-    border-radius: var(--radius-sm); border: 2px solid var(--cream-dark);
-    background: var(--cream); cursor: pointer; transition: var(--transition);
-    color: var(--brown-soft); font-size: 17px;
-  }
-  .mobile-eyedropper-btn:hover { border-color: var(--caramel); }
-  .mobile-eyedropper-btn.active { background: var(--caramel); border-color: var(--caramel); color: #fff; }
+/* Eyedropper (color picker) tool — works via mouse on desktop and touch on mobile */
+.mobile-eyedropper-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 46px; height: 46px;
+  border-radius: var(--radius-sm); border: 2px solid var(--cream-dark);
+  background: var(--cream); cursor: pointer; transition: var(--transition);
+  color: var(--brown-soft); font-size: 17px;
 }
+.mobile-eyedropper-btn:hover { border-color: var(--caramel); color: var(--caramel); }
+.mobile-eyedropper-btn.active { background: var(--caramel); border-color: var(--caramel); color: #fff; }
 </style>
 </head>
 <body>
@@ -3031,9 +3028,14 @@ async function doRegister(){
   if(!/^[a-zA-Z0-9_]+$/.test(username)){showToast('Usuário: apenas letras, números e _');return;}
   showToast('Criando sua conta...');
   let data,error;
-  try{({data,error}=await sb.auth.signUp({email,password:pass,options:{data:{username},emailRedirectTo:undefined}}));}catch(e){showToast('Erro de conexão.');return;}
-  if(error){showToast('Erro: '+error.message);return;}
-  if(data.user){try{await sb.from('profiles').upsert({id:data.user.id,username,bio:'',avatar_color:'#D4821A'});}catch(e){}}
+  try{({data,error}=await sb.auth.signUp({email,password:pass,options:{data:{username},emailRedirectTo:'https://natan95840.github.io/Pudixel/authentication.html'}}));}catch(e){showToast('Erro de conexão.');return;}
+  if(error){
+    var errMsg=(error.message||'').toLowerCase();
+    var isRateLimit = error.status===429 || errMsg.indexOf('rate limit')!==-1 || errMsg.indexOf('too many requests')!==-1;
+    if(isRateLimit){ showRateLimitModal(); return; }
+    showToast('Erro: '+error.message); return;
+  }
+  if(data.user && data.user.identities && data.user.identities.length>0){try{await sb.from('profiles').upsert({id:data.user.id,username,bio:'',avatar_color:'#D4821A'});}catch(e){}}
   if(data.session){await afterAuth(data.session);return;}
   showVerifyModal();
   return;
@@ -3451,7 +3453,7 @@ function bindCanvasEvents(canvas,size){
   canvas.addEventListener('touchend',()=>{isDrawing=false;lastPixel=null;});
 }
 
-function activateMobileEyedropper(){mobileEyedropperActive=true;document.getElementById('toolEyedropperMobile').classList.add('active');showToast('Toque em um pixel para capturar a cor');}
+function activateMobileEyedropper(){mobileEyedropperActive=true;document.getElementById('toolEyedropperMobile').classList.add('active');showToast('Selecione um pixel para capturar a cor');}
 function deactivateMobileEyedropper(){mobileEyedropperActive=false;document.getElementById('toolEyedropperMobile')?.classList.remove('active');}
 
 function floodFill(x,y,targetColor,fillColor){
@@ -3697,116 +3699,6 @@ async function boot(){
 
 window.addEventListener('DOMContentLoaded',boot);
 
-/* ══════════════ HOME PAGE BEHAVIOURS ══════════════ */
-
-// Sticky header becomes solid on scroll
-(function(){
-  var hdr = document.getElementById('homeHeader');
-  if(!hdr) return;
-  window.addEventListener('scroll', function(){
-    if(window.scrollY > 60) hdr.classList.add('scrolled');
-    else hdr.classList.remove('scrolled');
-  }, {passive:true});
-})();
-
-// Scroll-reveal observer
-(function(){
-  var obs = new IntersectionObserver(function(entries){
-    entries.forEach(function(e){
-      if(e.isIntersecting){ e.target.classList.add('active'); obs.unobserve(e.target); }
-    });
-  },{threshold:0.12});
-  document.querySelectorAll('.reveal').forEach(function(el){ obs.observe(el); });
-})();
-
-// Draw pixel pudim on home canvases
-function drawHomePudim(canvas){
-  if(!canvas) return;
-  var ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = false;
-  var w = canvas.width, s = w/16;
-  var px = function(x,y,c){ ctx.fillStyle=c; ctx.fillRect(x*s,y*s,s,s); };
-  [[4,3],[5,3],[6,3],[7,3],[8,3],[9,3],[10,3],[3,4],[4,4],[5,4],[6,4],[7,4],[8,4],[9,4],[10,4],[11,4],[3,5],[4,5],[5,5],[6,5],[7,5],[8,5],[9,5],[10,5],[11,5],[3,6],[4,6],[5,6],[6,6],[7,6],[8,6],[9,6],[10,6],[11,6],[3,7],[4,7],[5,7],[6,7],[7,7],[8,7],[9,7],[10,7],[11,7],[3,8],[4,8],[5,8],[6,8],[7,8],[8,8],[9,8],[10,8],[11,8]].forEach(function(p){px(p[0],p[1],'#D4821A');});
-  [[4,9],[5,9],[6,9],[7,9],[8,9],[9,9],[10,9],[3,10],[4,10],[5,10],[6,10],[7,10],[8,10],[9,10],[10,10],[11,10],[3,11],[4,11],[5,11],[6,11],[7,11],[8,11],[9,11],[10,11],[11,11]].forEach(function(p){px(p[0],p[1],'#FFF8EE');});
-  [[2,12],[3,12],[4,12],[5,12],[6,12],[7,12],[8,12],[9,12],[10,12],[11,12],[12,12],[2,13],[3,13],[4,13],[5,13],[6,13],[7,13],[8,13],[9,13],[10,13],[11,13],[12,13]].forEach(function(p){px(p[0],p[1],'#FDE9B0');});
-  [[5,1],[6,1],[7,1],[8,1],[9,1],[4,2],[5,2],[6,2],[7,2],[8,2],[9,2],[10,2]].forEach(function(p){px(p[0],p[1],'#E8A03A');});
-  px(6,6,'#6B3F1A'); px(9,6,'#6B3F1A'); px(6,8,'#6B3F1A'); px(9,8,'#6B3F1A'); px(7,9,'#6B3F1A'); px(8,9,'#6B3F1A');
-}
-drawHomePudim(document.getElementById('heroPudim'));
-drawHomePudim(document.getElementById('mockEditor'));
-
-// Load home stats + featured arts from DB
-async function loadHomeData(){
-  try {
-    // Stats
-    var r1 = await sb.from('posts').select('id', {count:'exact',head:true});
-    var r2 = await sb.from('profiles').select('id', {count:'exact',head:true});
-    var r3 = await sb.from('posts').select('likes');
-    var totalLikes = 0;
-    if(r3.data) r3.data.forEach(function(p){ totalLikes += (p.likes||0); });
-    var fmt = function(n){ return n >= 1000 ? (n/1000).toFixed(1).replace('.0','')+'k' : String(n); };
-    var s1 = document.getElementById('statArtes');    if(s1 && r1.count != null) s1.textContent = fmt(r1.count);
-    var s2 = document.getElementById('statArtistas'); if(s2 && r2.count != null) s2.textContent = fmt(r2.count);
-    var s3 = document.getElementById('statPudins');   if(s3) s3.textContent = fmt(totalLikes);
-  } catch(e){}
-
-  // Featured arts: try users maguila, mayra, natan
-  try {
-    var users = ['maguila','mayra','natan'];
-    var pr = await sb.from('profiles').select('id,username,avatar_color').in('username', users);
-    if(!pr.data || !pr.data.length) return;
-    var ids = pr.data.map(function(p){return p.id;});
-    var po = await sb.from('posts').select('id,pixel_data,likes,created_at,user_id').in('user_id',ids).order('likes',{ascending:false}).limit(3);
-    if(!po.data || !po.data.length) return;
-
-    var timeFmt = function(iso){
-      var d = Math.floor((Date.now()-new Date(iso).getTime())/3600000);
-      if(d<1) return 'Agora mesmo';
-      if(d<24) return 'Há '+d+'h';
-      if(d<48) return 'Ontem';
-      return 'Há '+Math.floor(d/24)+' dias';
-    };
-
-    po.data.forEach(function(post, i){
-      var prof = pr.data.find(function(p){return p.id===post.user_id;});
-      if(!prof) return;
-
-      // Swap img for canvas
-      var img = document.getElementById('fimg-'+i);
-      var cnv = document.getElementById('fcanvas-'+i);
-      if(img) img.style.display='none';
-      if(cnv){
-        cnv.style.display='block';
-        try{
-          var pd = typeof post.pixel_data==='string'?JSON.parse(post.pixel_data):post.pixel_data;
-          var sz = pd.size||16;
-          cnv.width=sz; cnv.height=sz;
-          var ctx=cnv.getContext('2d'); ctx.imageSmoothingEnabled=false;
-          if(pd.pixels) Object.entries(pd.pixels).forEach(function(e){
-            var parts=e[0].split(','); ctx.fillStyle=e[1]; ctx.fillRect(+parts[0],+parts[1],1,1);
-          });
-        }catch(ex){ if(img){img.style.display='block';} if(cnv){cnv.style.display='none';} }
-      }
-
-      // Update author
-      var av = document.getElementById('favatar-'+i);
-      var nm = document.getElementById('fname-'+i);
-      var dt = document.getElementById('fdate-'+i);
-      var lk = document.getElementById('flikes-'+i);
-      if(av){ av.style.background = prof.avatar_color||'#D4821A'; av.textContent = prof.username[0].toUpperCase(); }
-      if(nm) nm.textContent = '@'+prof.username;
-      if(dt && post.created_at) dt.textContent = timeFmt(post.created_at);
-      if(lk){ var c=post.likes||0; lk.textContent = c>999?Math.floor(c/1000)+'k+':c; }
-    });
-  } catch(e){ console.log('Featured arts: usando estático'); }
-}
-
-// Call on DOMContentLoaded (sb already initialized)
-document.addEventListener('DOMContentLoaded', function(){
-  setTimeout(loadHomeData, 800);
-});
-
-
 /* ══════ HOME PAGE SCRIPTS ══════ */
 
 // Sticky header: transparent → solid on scroll
@@ -3849,26 +3741,27 @@ async function loadHomeData(){
   try{
     var r1=await sb.from('posts').select('id',{count:'exact',head:true});
     var r2=await sb.from('profiles').select('id',{count:'exact',head:true});
-    var r3=await sb.from('posts').select('likes');
-    var tot=0; if(r3.data) r3.data.forEach(function(p){tot+=(p.likes||0);});
+    var r3=await sb.from('pudins').select('id',{count:'exact',head:true});
     var fmt=function(n){return n>=1000?(n/1000).toFixed(1).replace(/\.0$/,'')+'k':String(n);};
     var e1=document.getElementById('statArtes');    if(e1&&r1.count!=null)e1.textContent=fmt(r1.count);
     var e2=document.getElementById('statArtistas'); if(e2&&r2.count!=null)e2.textContent=fmt(r2.count);
-    var e3=document.getElementById('statPudins');   if(e3)e3.textContent=fmt(tot);
+    var e3=document.getElementById('statPudins');   if(e3&&r3.count!=null)e3.textContent=fmt(r3.count);
   }catch(e){}
 
-  // Featured arts — try exact names then fallback ilike
+  // Featured arts — top 3 most-liked posts platform-wide
   try{
-    var exactNames=['Maguila','marya','NATAN'];
-    var pr=await sb.from('profiles').select('id,username,avatar_color')
-      .or('username.eq.Maguila,username.eq.marya,username.eq.NATAN,username.ilike.maguila,username.ilike.marya,username.ilike.natan');
-    if(!pr.data||!pr.data.length) return;
-
-    // Get top post per found user
-    var ids=pr.data.map(function(p){return p.id;});
-    var po=await sb.from('posts').select('id,pixel_data,likes,created_at,user_id')
-      .in('user_id',ids).order('likes',{ascending:false}).limit(3);
+    // Fetch a recent batch of posts with pudins relation; sort by pudins count
+    var po=await sb.from('posts').select('id,username,avatar_color,pixels,canvas_size,created_at,pudins(id)')
+      .order('created_at',{ascending:false}).limit(60);
     if(!po.data||!po.data.length) return;
+
+    po.data.sort(function(a,b){
+      var la=(a.pudins||[]).length, lb=(b.pudins||[]).length;
+      if(lb!==la) return lb-la;
+      return new Date(b.created_at)-new Date(a.created_at);
+    });
+
+    var top = po.data.slice(0,3);
 
     // Helper: format relative time
     var timeFmt=function(iso){
@@ -3879,27 +3772,7 @@ async function loadHomeData(){
       return 'Há '+Math.floor(h/24)+' dias';
     };
 
-    // Map each post to card slot ordered by exactNames preference
-    var slots=[];
-    exactNames.forEach(function(name){
-      var prof=pr.data.find(function(p){return p.username.toLowerCase()===name.toLowerCase();});
-      if(!prof) return;
-      var post=po.data.find(function(p){return p.user_id===prof.id;});
-      if(post) slots.push({prof:prof,post:post});
-    });
-    // Fill remaining slots with any leftover posts
-    po.data.forEach(function(post){
-      var already=slots.find(function(s){return s.post.id===post.id;});
-      if(!already&&slots.length<3){
-        var prof=pr.data.find(function(p){return p.id===post.user_id;});
-        if(prof) slots.push({prof:prof,post:post});
-      }
-    });
-
-    slots.forEach(function(slot,i){
-      if(i>2) return;
-      var prof=slot.prof, post=slot.post;
-
+    top.forEach(function(post,i){
       // Switch to canvas
       var img=document.getElementById('fimg-'+i);
       var cnv=document.getElementById('fcanvas-'+i);
@@ -3907,12 +3780,13 @@ async function loadHomeData(){
       if(cnv){
         cnv.style.display='block';
         try{
-          var pd=typeof post.pixel_data==='string'?JSON.parse(post.pixel_data):post.pixel_data;
-          var sz=pd.size||16; cnv.width=sz; cnv.height=sz;
+          var pixels=typeof post.pixels==='string'?JSON.parse(post.pixels):post.pixels;
+          var sz=post.canvas_size||16;
+          cnv.width=sz; cnv.height=sz;
           var ctx2=cnv.getContext('2d'); ctx2.imageSmoothingEnabled=false;
-          if(pd.pixels) Object.entries(pd.pixels).forEach(function(kv){
-            var xy=kv[0].split(','); ctx2.fillStyle=kv[1]; ctx2.fillRect(+xy[0],+xy[1],1,1);
-          });
+          for(var y=0;y<sz;y++)for(var x=0;x<sz;x++){
+            if(pixels[y]&&pixels[y][x]){ctx2.fillStyle=pixels[y][x];ctx2.fillRect(x,y,1,1);}
+          }
         }catch(ex){ if(img) img.style.display='block'; if(cnv) cnv.style.display='none'; }
       }
 
@@ -3921,10 +3795,10 @@ async function loadHomeData(){
       var nm=document.getElementById('fname-'+i);
       var dt=document.getElementById('fdate-'+i);
       var lk=document.getElementById('flikes-'+i);
-      if(av){av.style.background=prof.avatar_color||'#D4821A';av.textContent=prof.username[0].toUpperCase();}
-      if(nm) nm.textContent='@'+prof.username;
+      if(av){av.style.background=post.avatar_color||'#D4821A';av.textContent=(post.username||'?')[0].toUpperCase();}
+      if(nm) nm.textContent='@'+post.username;
       if(dt&&post.created_at) dt.textContent=timeFmt(post.created_at);
-      if(lk){var cnt=post.likes||0;lk.textContent=cnt>999?Math.floor(cnt/1000)+'k+':cnt;}
+      if(lk){var cnt=(post.pudins||[]).length;lk.textContent=cnt>999?Math.floor(cnt/1000)+'k+':cnt;}
     });
   }catch(e){console.log('Featured arts: fallback estático');}
 }
@@ -3979,6 +3853,43 @@ function showVerifyModal(){
 function closeVerifyModal(){
   var ov  = document.getElementById('emailVerifyOverlay');
   var box = document.getElementById('emailVerifyBox');
+  if(!ov) return;
+  box.style.transform = 'scale(0.92)';
+  box.style.opacity   = '0';
+  setTimeout(function(){ ov.style.display = 'none'; }, 380);
+}
+
+/* ══ EMAIL RATE LIMIT MODAL ══ */
+function showRateLimitModal(){
+  var ov    = document.getElementById('rateLimitOverlay');
+  var box   = document.getElementById('rateLimitBox');
+  var circle= document.getElementById('rateLimitCircle');
+  var lineA = document.getElementById('rateLimitLineA');
+  var lineB = document.getElementById('rateLimitLineB');
+  if(!ov) return;
+
+  /* Reset animation state */
+  circle.style.strokeDashoffset = '232';
+  lineA.style.strokeDashoffset  = '34';
+  lineB.style.strokeDashoffset  = '34';
+  box.style.transform = 'scale(0.88)';
+  box.style.opacity   = '0';
+
+  ov.style.display = 'flex';
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      box.style.transform = 'scale(1)';
+      box.style.opacity   = '1';
+      setTimeout(function(){ circle.style.strokeDashoffset = '0'; }, 180);
+      setTimeout(function(){ lineA.style.strokeDashoffset  = '0'; }, 820);
+      setTimeout(function(){ lineB.style.strokeDashoffset  = '0'; }, 950);
+    });
+  });
+}
+
+function closeRateLimitModal(){
+  var ov  = document.getElementById('rateLimitOverlay');
+  var box = document.getElementById('rateLimitBox');
   if(!ov) return;
   box.style.transform = 'scale(0.92)';
   box.style.opacity   = '0';
@@ -4043,6 +3954,63 @@ function toggleFaq(btn){
       onmousedown="this.style.transform='translateY(2px)';this.style.boxShadow='0 3px 0 var(--brown)'"
       onmouseup="this.style.transform='translateY(-2px)'">
       Vou verificar
+    </button>
+  </div>
+</div>
+
+<!-- ══ EMAIL RATE LIMIT MODAL (limite de e-mails do Supabase atingido) ══ -->
+<div id="rateLimitOverlay" style="display:none; position:fixed; inset:0; z-index:9000;
+  background:rgba(107,63,26,0.18); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  align-items:center; justify-content:center; padding:24px;">
+  <div id="rateLimitBox" style="
+    background:#fff; border-radius:32px; padding:56px 48px 48px;
+    max-width:440px; width:100%; text-align:center;
+    box-shadow:0 32px 80px rgba(107,63,26,0.18); border:1.5px solid var(--cream-dark);
+    transform:scale(0.88); opacity:0; transition:all 0.42s cubic-bezier(0.34,1.56,0.64,1);">
+
+    <div style="width:88px;height:88px;margin:0 auto 32px;position:relative;">
+      <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"
+           style="width:100%;height:100%;">
+        <circle cx="40" cy="40" r="37" stroke="var(--cream-dark)" stroke-width="3"/>
+        <circle id="rateLimitCircle" cx="40" cy="40" r="37"
+          stroke="var(--danger)" stroke-width="3" fill="none"
+          stroke-dasharray="232" stroke-dashoffset="232"
+          stroke-linecap="round"
+          transform="rotate(-90 40 40)"
+          style="transition:stroke-dashoffset 0.7s cubic-bezier(0.4,0,0.2,1)"/>
+        <line id="rateLimitLineA" x1="28" y1="28" x2="52" y2="52"
+          stroke="var(--danger)" stroke-width="4.5"
+          stroke-linecap="round"
+          stroke-dasharray="34" stroke-dashoffset="34"
+          style="transition:stroke-dashoffset 0.4s cubic-bezier(0.4,0,0.2,1) 0.65s"/>
+        <line id="rateLimitLineB" x1="52" y1="28" x2="28" y2="52"
+          stroke="var(--danger)" stroke-width="4.5"
+          stroke-linecap="round"
+          stroke-dasharray="34" stroke-dashoffset="34"
+          style="transition:stroke-dashoffset 0.4s cubic-bezier(0.4,0,0.2,1) 0.78s"/>
+      </svg>
+    </div>
+
+    <h2 style="
+      font-family:'Syne',sans-serif; font-weight:800; font-size:22px;
+      color:var(--brown); margin-bottom:14px; line-height:1.25;
+      letter-spacing:-0.3px;">
+      Limite de e-mails atingido
+    </h2>
+    <p style="font-size:15px; color:var(--text-mid); line-height:1.65; margin-bottom:36px;">
+      Muitas contas foram criadas na última hora. Por favor, aguarde um pouco e tente se cadastrar novamente mais tarde.
+    </p>
+    <button onclick="closeRateLimitModal()" style="
+      width:100%; padding:15px; border:none; border-radius:16px; cursor:pointer;
+      background:linear-gradient(135deg,var(--danger),#A93226);
+      color:#fff; font-family:'DM Sans',sans-serif; font-weight:700; font-size:16px;
+      box-shadow:0 5px 0 #7B241C,0 8px 24px rgba(192,57,43,0.3);
+      transition:all 0.2s cubic-bezier(0.4,0,0.2,1);"
+      onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 7px 0 #7B241C,0 14px 30px rgba(192,57,43,0.35)'"
+      onmouseout="this.style.transform='';this.style.boxShadow='0 5px 0 #7B241C,0 8px 24px rgba(192,57,43,0.3)'"
+      onmousedown="this.style.transform='translateY(2px)';this.style.boxShadow='0 3px 0 #7B241C'"
+      onmouseup="this.style.transform='translateY(-2px)'">
+      Entendi
     </button>
   </div>
 </div>
